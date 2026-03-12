@@ -1,0 +1,274 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-brand-green: #4dcf8a;
+  --color-offline-orange: #f87c3f;
+}
+
+/* ─── Design tokens ──────────────────────────────────────────── */
+
+:root {
+  --c-bg: #07090f;
+  --c-tooltip-bg: #0d1522;
+  --c-tooltip-border: #1e2d44;
+  --c-tooltip-text: #b0a898;
+  --c-text: #c8c0b4;
+  --c-text-secondary: #908070;
+  --c-text-muted: #7a6e60;
+  --c-text-dim: #6a5e52;
+  --c-text-faint: #5a5040;
+  --c-gold: #c9963d;
+  --c-gold-bright: #e8b84b;
+  --c-gold-text: #b08840;
+  --c-green: #4e9a70;
+  --c-link: #9a7848;
+  --c-border: #252e40;
+  --c-border-subtle: #0f1520;
+  --c-divider: #1e2535;
+  --c-rule-fade: #2a3040;
+  --c-rule-subtle: #1a2030;
+  --c-hover-row: rgba(201, 150, 61, 0.04);
+  --c-dot-grid: rgba(201, 150, 61, 0.035);
+  --c-gradient-1: rgba(201, 150, 61, 0.07);
+  --c-gradient-2: rgba(77, 207, 138, 0.035);
+  --c-ember-shadow-1: rgba(232, 184, 75, 0.35);
+  --c-ember-shadow-2: rgba(232, 184, 75, 0.1);
+  --c-ember-shadow-3: rgba(232, 184, 75, 0.55);
+  --c-ember-shadow-4: rgba(232, 184, 75, 0.18);
+}
+
+html.light {
+  --c-bg: #faf7f2;
+  --c-tooltip-bg: #2a2218;
+  --c-tooltip-border: #4a3e30;
+  --c-tooltip-text: #e8e0d4;
+  --c-text: #2a2218;
+  --c-text-secondary: #5a5040;
+  --c-text-muted: #6a5840;
+  --c-text-dim: #8a7860;
+  --c-text-faint: #a09070;
+  --c-gold: #a07828;
+  --c-gold-bright: #b88a28;
+  --c-gold-text: #906820;
+  --c-green: #1a7040;
+  --c-link: #8a6020;
+  --c-border: #d0c4a8;
+  --c-border-subtle: #e8e0d0;
+  --c-divider: #d0c4b0;
+  --c-rule-fade: #d8ccb0;
+  --c-rule-subtle: #e0d8c8;
+  --c-hover-row: rgba(160, 120, 40, 0.07);
+  --c-dot-grid: rgba(160, 120, 40, 0.05);
+  --c-gradient-1: rgba(160, 120, 40, 0.08);
+  --c-gradient-2: rgba(26, 112, 64, 0.04);
+  --c-ember-shadow-1: rgba(176, 136, 40, 0.3);
+  --c-ember-shadow-2: rgba(176, 136, 40, 0.1);
+  --c-ember-shadow-3: rgba(176, 136, 40, 0.45);
+  --c-ember-shadow-4: rgba(176, 136, 40, 0.15);
+}
+
+/* ─── Base ───────────────────────────────────────────────────── */
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    transition: background-color 0.25s ease;
+  }
+
+  body {
+    min-height: 100vh;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background-color: var(--c-bg);
+    color: var(--c-text);
+    background-image:
+      radial-gradient(circle, var(--c-dot-grid) 1px, transparent 1px),
+      radial-gradient(ellipse 80% 60% at 15% 40%, var(--c-gradient-1) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 85% 70%, var(--c-gradient-2) 0%, transparent 50%);
+    background-size:
+      40px 40px,
+      100% 100%,
+      100% 100%;
+    background-attachment: fixed;
+    transition:
+      background-color 0.25s ease,
+      color 0.25s ease;
+  }
+
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+}
+
+@layer components {
+  .layout-container {
+    @apply mx-auto max-w-[1080px];
+  }
+
+  .eyebrow-label {
+    @apply inline-flex items-center text-[0.58rem] font-medium uppercase tracking-[0.16em] transition-colors duration-200;
+    font-family: 'DM Sans', system-ui, sans-serif;
+  }
+
+  .mono-text-ui {
+    @apply tracking-[0.02em] transition-colors duration-200;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .mono-text-ui-dense {
+    @apply tracking-[0.04em];
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .info-icon {
+    @apply inline-flex items-center outline-none transition-colors duration-150;
+    color: var(--c-text-faint);
+    cursor: default;
+  }
+
+  .info-icon:hover {
+    color: var(--c-gold);
+  }
+
+  .interactive-square-btn {
+    @apply flex size-8 shrink-0 cursor-pointer items-center justify-center border p-0 transition-colors duration-200;
+    background: transparent;
+    border-color: var(--c-border);
+    color: var(--c-text-muted);
+  }
+
+  .interactive-square-btn:hover {
+    border-color: var(--c-gold);
+    color: var(--c-gold);
+  }
+
+  .data-table {
+    @apply w-full border-collapse;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .data-table-head-cell {
+    @apply px-3.5 py-2.5 text-left text-[0.58rem] font-medium uppercase tracking-[0.16em] transition-colors duration-200;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    color: var(--c-text-muted);
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  .data-table-cell {
+    @apply px-3.5 py-[0.55rem] text-[0.8rem] tracking-[0.01em] transition-colors duration-200;
+    border-bottom: 1px solid var(--c-border-subtle);
+  }
+}
+
+/* ─── Animations ─────────────────────────────────────────────── */
+
+@keyframes ember-pulse {
+  0%,
+  100% {
+    text-shadow:
+      0 0 20px var(--c-ember-shadow-1),
+      0 0 60px var(--c-ember-shadow-2);
+  }
+  50% {
+    text-shadow:
+      0 0 35px var(--c-ember-shadow-3),
+      0 0 90px var(--c-ember-shadow-4);
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─── Tooltip (teleported outside component scope) ───────────── */
+
+.app-tooltip {
+  position: absolute;
+  z-index: 9999;
+  max-width: 210px;
+  padding: 0.5rem 0.75rem;
+  background: var(--c-tooltip-bg);
+  border: 1px solid var(--c-tooltip-border);
+  color: var(--c-tooltip-text);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 0.7rem;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  pointer-events: none;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.35),
+    0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Arrow shared */
+.tt-arrow {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  background: var(--c-tooltip-bg);
+  border-color: var(--c-tooltip-border);
+  border-style: solid;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+/* Arrow pointing down (tooltip is above trigger) */
+.tt-above .tt-arrow {
+  top: calc(100% - 4px);
+  border-width: 0 1px 1px 0;
+}
+
+/* Arrow pointing up (tooltip is below trigger) */
+.tt-below .tt-arrow {
+  bottom: calc(100% - 4px);
+  border-width: 1px 0 0 1px;
+}
+
+/* Transition */
+.tt-enter-active,
+.tt-leave-active {
+  transition:
+    opacity 0.14s ease,
+    transform 0.14s ease;
+}
+
+.tt-above.tt-enter-from,
+.tt-above.tt-leave-to {
+  opacity: 0;
+  transform: translateY(5px);
+}
+
+.tt-below.tt-enter-from,
+.tt-below.tt-leave-to {
+  opacity: 0;
+  transform: translateY(-5px);
+}
+
+/* ─── Keyframes ──────────────────────────────────────────────── */
+
+@keyframes blink-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.15;
+  }
+  40% {
+    opacity: 1;
+  }
+}
