@@ -36,18 +36,26 @@ async function close() {
   bottom: 0;
   margin: 16px;
   padding: 12px 16px;
-  border: 1px solid rgb(148 163 184 / 0.4);
+  border: 1px solid var(--c-tooltip-border);
   border-radius: 8px;
   z-index: 100;
   text-align: left;
-  box-shadow: 0 4px 12px rgb(0 0 0 / 0.15);
-  background-color: var(--color-surface, #f8fafc);
+  background-color: var(--c-tooltip-bg);
+  color: var(--c-tooltip-text);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.35),
+    0 2px 6px rgba(0, 0, 0, 0.2);
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease;
 }
 
 .pwa-toast__message {
   margin-bottom: 8px;
   font-size: 0.875rem;
   line-height: 1.4;
+  color: inherit;
 }
 
 .pwa-toast__actions {
@@ -58,21 +66,38 @@ async function close() {
 
 .pwa-toast__btn {
   padding: 6px 12px;
-  border: 1px solid rgb(148 163 184 / 0.5);
+  border: 1px solid var(--c-tooltip-border);
   border-radius: 6px;
   font-size: 0.8125rem;
+  font-family: 'DM Sans', system-ui, sans-serif;
   cursor: pointer;
   background: transparent;
+  color: var(--c-tooltip-text);
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.pwa-toast__btn:hover {
+  border-color: var(--c-gold);
+  color: var(--c-gold);
 }
 
 .pwa-toast__btn:focus {
-  outline: 2px solid rgb(59 130 246);
+  outline: 2px solid var(--c-gold-bright);
   outline-offset: 2px;
 }
 
 .pwa-toast__btn--primary {
-  border-color: rgb(30 64 175);
-  background-color: rgb(59 130 246);
-  color: white;
+  border-color: var(--c-gold);
+  background-color: var(--c-gold-bright);
+  color: var(--c-gold-text-on);
+}
+
+.pwa-toast__btn--primary:hover {
+  border-color: var(--c-gold-bright);
+  background-color: var(--c-gold);
+  color: var(--c-gold-text-on);
 }
 </style>

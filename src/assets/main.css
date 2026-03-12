@@ -20,6 +20,7 @@
   --c-gold: #c9963d;
   --c-gold-bright: #e8b84b;
   --c-gold-text: #b08840;
+  --c-gold-text-on: #1a1814;
   --c-green: #4e9a70;
   --c-link: #9a7848;
   --c-border: #252e40;
@@ -50,6 +51,7 @@ html.light {
   --c-gold: #a07828;
   --c-gold-bright: #b88a28;
   --c-gold-text: #906820;
+  --c-gold-text-on: #faf7f2;
   --c-green: #1a7040;
   --c-link: #8a6020;
   --c-border: #d0c4a8;
