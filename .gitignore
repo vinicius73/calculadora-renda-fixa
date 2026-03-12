@@ -42,3 +42,5 @@ __screenshots__/
 .agents/
 .claude/
 skills-lock.json
+
+__olds__/

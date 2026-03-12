@@ -3,6 +3,7 @@ import AppHeader from './components/AppHeader.vue'
 import AppFooter from './components/AppFooter.vue'
 import CalculatorForm from './components/CalculatorForm.vue'
 import ResultsSection from './components/ResultsSection.vue'
+import ReloadPrompt from './components/ReloadPrompt.vue'
 </script>
 
 <template>
@@ -19,6 +20,7 @@ import ResultsSection from './components/ResultsSection.vue'
       </div>
     </main>
     <AppFooter />
+    <ReloadPrompt />
   </div>
 </template>
 
