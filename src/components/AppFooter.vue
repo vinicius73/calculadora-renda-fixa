@@ -11,7 +11,12 @@ const version = import.meta.env.VITE_APP_VERSION
           Feito por
           <a class="footer-link" href="https://vinicius73.dev" target="_blank">Vinicius73</a>
         </span>
-        <span class="footer-version">v{{ version }}</span>
+        <a
+          class="footer-version"
+          href="https://github.com/vinicius73/calculadora-renda-fixa"
+          target="_blank"
+          >v{{ version }}</a
+        >
       </div>
     </div>
   </footer>
