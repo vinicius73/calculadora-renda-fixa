@@ -1,11 +1,43 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useRegisterSW } from 'virtual:pwa-register/vue'
 
-const { offlineReady, needRefresh, updateServiceWorker } = useRegisterSW()
+const RELOAD_FALLBACK_MS = 2000
+
+const { offlineReady, needRefresh, updateServiceWorker } = useRegisterSW({
+  onRegisterError(error: unknown) {
+    console.error('[PWA] Service worker registration failed:', error)
+  },
+})
+
+const isUpdating = ref(false)
+const updateError = ref<string | null>(null)
 
 async function close() {
   offlineReady.value = false
   needRefresh.value = false
+  updateError.value = null
+}
+
+async function handleUpdate() {
+  if (isUpdating.value) return
+  isUpdating.value = true
+  updateError.value = null
+  try {
+    await updateServiceWorker()
+    // Fallback: if "controlling" does not fire (e.g. race with multiple tabs), reload after a short delay.
+    setTimeout(() => {
+      if (!document.hidden) {
+        window.location.reload()
+      }
+    }, RELOAD_FALLBACK_MS)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    updateError.value = message
+    console.error('[PWA] Update failed:', err)
+  } finally {
+    isUpdating.value = false
+  }
 }
 </script>
 
@@ -13,6 +45,7 @@ async function close() {
   <div v-if="offlineReady || needRefresh" class="pwa-toast" role="alert">
     <div class="pwa-toast__message">
       <span v-if="offlineReady"> App pronto para uso offline. </span>
+      <span v-else-if="updateError"> Erro ao atualizar: {{ updateError }} </span>
       <span v-else> Nova versão disponível. Clique em atualizar para carregar. </span>
     </div>
     <div class="pwa-toast__actions">
@@ -20,9 +53,10 @@ async function close() {
         v-if="needRefresh"
         type="button"
         class="pwa-toast__btn pwa-toast__btn--primary"
-        @click="updateServiceWorker()"
+        :disabled="isUpdating"
+        @click="handleUpdate"
       >
-        Atualizar
+        {{ isUpdating ? 'Atualizando…' : 'Atualizar' }}
       </button>
       <button type="button" class="pwa-toast__btn" @click="close">Fechar</button>
     </div>
