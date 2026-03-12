@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import { useCalculatorStore } from '@/stores/calculator'
 import AppTooltip from '@/components/AppTooltip.vue'
 import { TaxPeriod, toAnnualRate, toMonthlyRate } from '@/lib/taxRate'
+import { useCalculatorUrlSync } from '@/composables/useCalculatorUrlSync'
 
 const store = useCalculatorStore()
 const { entry } = storeToRefs(store)
@@ -11,6 +12,8 @@ const { entry } = storeToRefs(store)
 // ── Interest rate with period toggle ────────────────────────────
 
 const taxPeriod = ref<TaxPeriod>(TaxPeriod.Annual)
+
+useCalculatorUrlSync(taxPeriod)
 
 const taxDisplay = computed({
   get(): number {
