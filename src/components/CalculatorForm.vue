@@ -133,26 +133,22 @@ const taxHint = computed(() => {
           <input v-model.number="taxDisplay" inputmode="decimal" type="number" step="any" min="0" />
           <span class="field-affix mono-text-ui-dense">%</span>
           <div class="period-toggle" role="group" aria-label="Período da taxa">
-            <AppTooltip content="Taxa mensal — juros compostos sobre o saldo a cada mês">
-              <button
-                type="button"
-                class="period-btn mono-text-ui-dense"
-                :class="{ 'period-active': taxPeriod === TaxPeriod.Monthly }"
-                @click="switchPeriod(TaxPeriod.Monthly)"
-              >
-                a.m.
-              </button>
-            </AppTooltip>
-            <AppTooltip content="Taxa anual — convertida para mensal usando (1 + r)^(1/12) − 1">
-              <button
-                type="button"
-                class="period-btn mono-text-ui-dense"
-                :class="{ 'period-active': taxPeriod === TaxPeriod.Annual }"
-                @click="switchPeriod(TaxPeriod.Annual)"
-              >
-                a.a.
-              </button>
-            </AppTooltip>
+            <button
+              type="button"
+              class="period-btn mono-text-ui-dense"
+              :class="{ 'period-active': taxPeriod === TaxPeriod.Monthly }"
+              @click="switchPeriod(TaxPeriod.Monthly)"
+            >
+              a.m.
+            </button>
+            <button
+              type="button"
+              class="period-btn mono-text-ui-dense"
+              :class="{ 'period-active': taxPeriod === TaxPeriod.Annual }"
+              @click="switchPeriod(TaxPeriod.Annual)"
+            >
+              a.a.
+            </button>
           </div>
         </label>
         <Transition name="hint">
@@ -247,7 +243,7 @@ const taxHint = computed(() => {
 }
 
 .field-input-row {
-  @apply flex cursor-text items-center gap-2 border-b pb-[0.4rem] transition-colors duration-200;
+  @apply flex min-w-0 cursor-text items-center gap-2 overflow-visible border-b pb-[0.4rem] transition-colors duration-200;
   border-color: var(--c-border);
 }
 
@@ -274,7 +270,7 @@ const taxHint = computed(() => {
 /* ── Period toggle ── */
 
 .period-toggle {
-  @apply ml-1 flex shrink-0;
+  @apply ml-1 mr-0.5 flex shrink-0;
 }
 
 .period-btn {

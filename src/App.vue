@@ -39,7 +39,7 @@ import ResultsSection from './components/ResultsSection.vue'
 }
 
 .app-sidebar {
-  @apply sticky;
+  @apply sticky overflow-visible pr-2;
   top: 2.5rem;
 }
 
