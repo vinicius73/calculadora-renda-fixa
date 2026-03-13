@@ -5,7 +5,12 @@ import { useCalculatorStore } from '@/stores/calculator'
 import AppTooltip from '@/components/AppTooltip.vue'
 import { TaxPeriod, RateSource, toAnnualRate, toMonthlyRate } from '@/lib/taxRate'
 import { useCalculatorUrlSync } from '@/composables/useCalculatorUrlSync'
-import { INDEX_KEYS, calculateEffectiveAnnualRate, type IndexKey } from '@/lib/indices'
+import {
+  INDEX_KEYS,
+  DEFAULT_INDICES,
+  calculateEffectiveAnnualRate,
+  type IndexKey,
+} from '@/lib/indices'
 import { useIndices } from '@/composables/useIndices'
 import InfoIcon from '@/components/InfoIcon.vue'
 
@@ -107,6 +112,16 @@ function saveIndexRate() {
 function cancelEditIndexRate() {
   editingIndexRate.value = false
 }
+
+// Detects if user manually overrode the current index base rate
+const isCurrentIndexCustom = computed(() => {
+  const defaultRate = DEFAULT_INDICES[selectedIndex.value].annualRate
+  return Math.abs(currentIndexEntry.value.annualRate - defaultRate) > 0.0001
+})
+
+function resetCurrentIndex() {
+  updateRate(selectedIndex.value, DEFAULT_INDICES[selectedIndex.value].annualRate)
+}
 </script>
 
 <template>
@@ -185,37 +200,40 @@ function cancelEditIndexRate() {
       </div>
 
       <!-- ── Interest rate ── -->
-      <div class="field">
-        <div class="field-label-row">
-          <span class="field-label">Taxa de Juros</span>
-          <div class="period-toggle rate-source-toggle" role="group" aria-label="Fonte da taxa">
+      <div class="field rate-field">
+        <!-- Header row: label + source tabs -->
+        <div class="rate-header">
+          <div class="field-label-row">
+            <span class="field-label">Taxa de Juros</span>
+            <AppTooltip
+              content="Taxa de retorno do investimento. Use taxa fixa ou calcule com base em um índice (CDI, Selic, IPCA)"
+            >
+              <span class="info-icon" tabindex="-1" aria-label="Ajuda">
+                <InfoIcon />
+              </span>
+            </AppTooltip>
+          </div>
+          <div class="rate-source-tabs" role="group" aria-label="Fonte da taxa">
             <button
               type="button"
-              class="period-btn mono-text-ui-dense"
-              :class="{ 'period-active': rateSource === RateSource.Fixed }"
+              class="rst-tab mono-text-ui-dense"
+              :class="{ 'rst-active': rateSource === RateSource.Fixed }"
               @click="setRateSource(RateSource.Fixed)"
             >
               Fixa
             </button>
             <button
               type="button"
-              class="period-btn mono-text-ui-dense"
-              :class="{ 'period-active': rateSource === RateSource.Index }"
+              class="rst-tab mono-text-ui-dense"
+              :class="{ 'rst-active': rateSource === RateSource.Index }"
               @click="setRateSource(RateSource.Index)"
             >
               % Índice
             </button>
           </div>
-          <AppTooltip
-            content="Taxa de retorno do investimento. Use taxa fixa ou calcule com base em um índice (CDI, Selic, IPCA)"
-          >
-            <span class="info-icon" tabindex="-1" aria-label="Ajuda">
-              <InfoIcon />
-            </span>
-          </AppTooltip>
         </div>
 
-        <!-- Fixed rate (current behavior) -->
+        <!-- Fixed rate -->
         <template v-if="rateSource === RateSource.Fixed">
           <label class="field-input-row">
             <input
@@ -252,38 +270,56 @@ function cancelEditIndexRate() {
 
         <!-- Index rate mode -->
         <template v-else>
-          <label class="field-input-row">
-            <select v-model="selectedIndex" class="index-select mono-text-ui-dense">
-              <option v-for="key in INDEX_KEYS" :key="key" :value="key">
-                {{ indices[key].label }}
-              </option>
-            </select>
-            <span class="field-affix mono-text-ui-dense index-sep">×</span>
-            <input
-              v-model.number="indexMultiplier"
-              inputmode="decimal"
-              type="number"
-              step="any"
-              min="0"
-              class="index-multiplier-input"
-            />
-            <span class="field-affix mono-text-ui-dense">%</span>
-          </label>
-          <div class="index-base-row">
-            <span class="index-base-label mono-text-ui-dense">
-              {{ currentIndexEntry.label }}:
+          <!-- Index selector chips -->
+          <div class="index-chips" role="group" aria-label="Índice de referência">
+            <button
+              v-for="key in INDEX_KEYS"
+              :key="key"
+              type="button"
+              class="index-chip"
+              :class="{ 'chip-active': selectedIndex === key }"
+              @click="selectedIndex = key"
+            >
+              <span class="chip-name mono-text-ui-dense">{{ indices[key].label }}</span>
+              <span class="chip-rate mono-text-ui-dense"
+                >{{ indices[key].annualRate.toFixed(2) }}%</span
+              >
+            </button>
+          </div>
+
+          <!-- Multiplier formula: CDI × ___% = X% a.a. -->
+          <div class="index-formula-row">
+            <span class="formula-label mono-text-ui-dense">{{ currentIndexEntry.label }}</span>
+            <span class="formula-op mono-text-ui-dense">×</span>
+            <label class="formula-input-wrap">
+              <input
+                v-model.number="indexMultiplier"
+                inputmode="decimal"
+                type="number"
+                step="any"
+                min="0"
+                class="formula-input mono-text-ui-dense"
+              />
+              <span class="formula-pct mono-text-ui-dense">%</span>
+            </label>
+            <span class="formula-eq mono-text-ui-dense">=</span>
+            <span class="formula-result mono-text-ui-dense">
+              {{ indexEffectiveAnnualRate.toFixed(2) }}% a.a.
             </span>
+          </div>
+
+          <!-- Base rate info with inline edit -->
+          <div class="index-base-row">
+            <span class="index-base-label mono-text-ui-dense">base:</span>
             <template v-if="!editingIndexRate">
-              <span class="index-rate-display mono-text-ui-dense">
-                {{ currentIndexEntry.annualRate.toFixed(2) }}% a.a.
-              </span>
               <button
                 type="button"
-                class="index-edit-btn"
-                title="Editar taxa base"
+                class="index-rate-btn mono-text-ui-dense"
+                title="Clique para editar a taxa base"
                 @click="startEditIndexRate"
               >
-                <svg width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+                {{ currentIndexEntry.annualRate.toFixed(2) }}% a.a.
+                <svg width="8" height="8" viewBox="0 0 10 10" fill="none" aria-hidden="true">
                   <path
                     d="M7 1.5l1.5 1.5L3 8.5H1.5V7L7 1.5z"
                     stroke="currentColor"
@@ -292,6 +328,28 @@ function cancelEditIndexRate() {
                   />
                 </svg>
               </button>
+              <template v-if="isCurrentIndexCustom">
+                <span class="index-custom-tag mono-text-ui-dense">editado</span>
+                <button
+                  type="button"
+                  class="index-reset-btn"
+                  title="Restaurar valor padrão"
+                  @click="resetCurrentIndex"
+                >
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                    <path
+                      d="M10 6a4 4 0 1 1-1.17-2.83M10 2v3H7"
+                      stroke="currentColor"
+                      stroke-width="1.3"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </button>
+              </template>
+              <span v-else class="index-ref mono-text-ui-dense">{{
+                currentIndexEntry.reference
+              }}</span>
             </template>
             <template v-else>
               <input
@@ -306,9 +364,10 @@ function cancelEditIndexRate() {
                 @keydown.escape="cancelEditIndexRate"
               />
               <span class="field-affix mono-text-ui-dense">% a.a.</span>
+              <span class="index-edit-hint mono-text-ui-dense">↵ · esc</span>
             </template>
-            <span class="index-ref mono-text-ui-dense">· {{ currentIndexEntry.reference }}</span>
           </div>
+
           <Transition name="hint">
             <span v-if="indexEffectiveHint" class="tax-hint mono-text-ui">
               {{ indexEffectiveHint }}
@@ -472,16 +531,50 @@ function cancelEditIndexRate() {
   background: color-mix(in srgb, var(--c-gold) 10%, transparent);
 }
 
-/* ── Rate source toggle (Fixa / % Índice) ── */
+/* ── Rate field container ── */
 
-.rate-source-toggle {
-  @apply ml-0 mr-auto;
+.rate-field {
+  @apply gap-0;
+}
+
+/* ── Rate header: label row + source tabs ── */
+
+.rate-header {
+  @apply flex items-center justify-between gap-2 mb-3;
+}
+
+/* ── Rate source tabs (Fixa / % Índice) ── */
+
+.rate-source-tabs {
+  @apply flex shrink-0;
+}
+
+.rst-tab {
+  @apply cursor-pointer border px-[0.55rem] py-[0.22rem] text-[0.58rem] leading-none tracking-[0.06em] transition-colors duration-150;
+  background: transparent;
+  border-color: var(--c-border);
+  color: var(--c-text-faint);
+}
+
+.rst-tab:first-child {
+  border-right: none;
+}
+
+.rst-tab:hover:not(.rst-active) {
+  border-color: var(--c-text-muted);
+  color: var(--c-text-muted);
+}
+
+.rst-tab.rst-active {
+  border-color: var(--c-gold);
+  color: var(--c-gold);
+  background: color-mix(in srgb, var(--c-gold) 8%, transparent);
 }
 
 /* ── Conversion hint ── */
 
 .tax-hint {
-  @apply block text-[0.65rem];
+  @apply block text-[0.65rem] mt-1;
   color: var(--c-text-dim);
 }
 
@@ -498,57 +591,158 @@ function cancelEditIndexRate() {
   transform: translateY(-4px);
 }
 
-/* ── Index mode ── */
+/* ── Index chips (CDI / Selic / IPCA) ── */
 
-.index-select {
-  @apply flex-1 min-w-0 border-none bg-transparent py-1 outline-none cursor-pointer;
-  font-family: 'IBM Plex Mono', monospace;
-  @apply text-[0.95rem] tracking-[0.02em] transition-colors duration-200;
+.index-chips {
+  @apply flex gap-[0.4rem] mb-3;
+}
+
+.index-chip {
+  @apply flex flex-1 flex-col items-center gap-[0.15rem] cursor-pointer border py-[0.4rem] px-2 transition-all duration-150;
+  background: transparent;
+  border-color: var(--c-border);
+  color: var(--c-text-faint);
+  min-width: 0;
+}
+
+.index-chip:hover:not(.chip-active) {
+  border-color: var(--c-text-muted);
+  color: var(--c-text-muted);
+}
+
+.index-chip.chip-active {
+  border-color: var(--c-gold);
+  color: var(--c-gold);
+  background: color-mix(in srgb, var(--c-gold) 8%, transparent);
+}
+
+.chip-name {
+  font-size: 0.52rem;
+  letter-spacing: 0.12em;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.chip-rate {
+  font-size: 0.78rem;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+/* ── Index formula row: CDI × ___% = X% a.a. ── */
+
+.index-formula-row {
+  @apply flex items-center gap-[0.45rem] border-b pb-[0.4rem] mb-2;
+  border-color: var(--c-border);
+}
+
+.formula-label {
+  font-size: 0.72rem;
+  color: var(--c-text-muted);
+  min-width: max-content;
+}
+
+.formula-op,
+.formula-eq {
+  font-size: 0.65rem;
+  color: var(--c-text-faint);
+  flex-shrink: 0;
+}
+
+.formula-input-wrap {
+  @apply flex items-center gap-[0.2rem] border-b pb-[0.15rem] transition-colors duration-200;
+  border-color: var(--c-border);
+}
+
+.formula-input-wrap:focus-within {
+  border-bottom-color: var(--c-gold);
+}
+
+.formula-input {
+  @apply border-none bg-transparent outline-none py-0;
+  width: 3.6rem;
+  font-size: 0.88rem;
   color: var(--c-text);
+  text-align: right;
 }
 
-.index-sep {
-  @apply text-[0.75rem];
+.formula-pct {
+  font-size: 0.65rem;
+  color: var(--c-text-dim);
+  flex-shrink: 0;
 }
 
-.index-multiplier-input {
-  @apply w-16 flex-none;
+.formula-result {
+  @apply ml-auto;
+  font-size: 0.88rem;
+  color: var(--c-gold-bright);
+  letter-spacing: 0.01em;
+  flex-shrink: 0;
 }
+
+/* ── Index base rate row ── */
 
 .index-base-row {
   @apply flex items-center gap-[0.3rem] flex-wrap;
 }
 
 .index-base-label {
-  @apply text-[0.62rem];
-  color: var(--c-text-dim);
+  font-size: 0.6rem;
+  color: var(--c-text-faint);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.index-rate-display {
-  @apply text-[0.7rem];
+.index-rate-btn {
+  @apply inline-flex items-center gap-[0.25rem] cursor-pointer border-none bg-transparent p-0 leading-none transition-colors duration-150;
+  font-size: 0.68rem;
   color: var(--c-text-secondary);
 }
 
-.index-edit-btn {
-  @apply cursor-pointer border-none bg-transparent p-0 leading-none transition-colors duration-150;
-  color: var(--c-text-faint);
-}
-
-.index-edit-btn:hover {
+.index-rate-btn:hover {
   color: var(--c-gold);
 }
 
+.index-custom-tag {
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--c-gold) 50%, transparent);
+  color: var(--c-gold);
+  background: color-mix(in srgb, var(--c-gold) 8%, transparent);
+}
+
+.index-reset-btn {
+  @apply inline-flex cursor-pointer border-none bg-transparent p-0 leading-none transition-colors duration-150;
+  color: var(--c-text-faint);
+}
+
+.index-reset-btn:hover {
+  color: var(--c-gold);
+}
+
+.index-ref {
+  font-size: 0.6rem;
+  color: var(--c-text-faint);
+  letter-spacing: 0.03em;
+}
+
 .index-rate-edit-input {
-  @apply w-16 border-none bg-transparent py-0 outline-none;
-  font-family: 'IBM Plex Mono', monospace;
-  @apply text-[0.7rem] tracking-[0.02em];
+  @apply border-none bg-transparent py-0 outline-none;
+  width: 3.8rem;
+  font-size: 0.72rem;
   color: var(--c-text);
   border-bottom: 1px solid var(--c-gold) !important;
 }
 
-.index-ref {
-  @apply text-[0.6rem];
+.index-edit-hint {
+  font-size: 0.58rem;
   color: var(--c-text-faint);
+  letter-spacing: 0.04em;
+  margin-left: auto;
 }
 
 /* ── Calculate button ── */
