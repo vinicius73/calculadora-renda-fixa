@@ -1,0 +1,75 @@
+# Updates indices data (gen:indices + fix) and commits src/data/indices.json if changed.
+# Schedule: every Monday at 05:00 UTC.
+# See: https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule
+
+name: Update indices
+
+on:
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: .
+
+jobs:
+  update-indices:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate indices
+        run: npm run gen:indices
+
+      - name: Lint and format
+        run: npm run fix
+
+      - name: Commit and push if indices changed
+        run: |
+          if git status --porcelain -- src/data/indices.json | grep -q .; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add src/data/indices.json
+            updated_at=$(jq -r '._meta.updatedAt // "n/a"' src/data/indices.json)
+            summary=$(jq -r '
+              to_entries
+              | map(select(.key != "_meta"))
+              | .[]
+              | "\(.value.key): \(.value.annualRate)% (\(.value.reference))"
+            ' src/data/indices.json | sed 's/^/- /')
+            git commit -m "chore(data): update indices (${updated_at})" -m "${summary}"
+            git push
+            {
+              echo "## Update indices"
+              echo ""
+              echo "**Status:** indices updated and committed"
+              echo ""
+              echo "**Updated at:** ${updated_at}"
+              echo ""
+              echo "**Rates:**"
+              echo "${summary}"
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No changes in src/data/indices.json"
+            {
+              echo "## Update indices"
+              echo ""
+              echo "**Status:** no changes in \`src/data/indices.json\`"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
