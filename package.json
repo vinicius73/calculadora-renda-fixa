@@ -15,7 +15,8 @@
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
     "format": "oxfmt src/",
-    "fix": "run-s lint:eslint lint:oxlint format"
+    "fix": "run-s lint:eslint lint:oxlint format",
+    "gen:indices": "node scripts/gen-indices.mjs"
   },
   "dependencies": {
     "@vueuse/core": "^14.2.1",

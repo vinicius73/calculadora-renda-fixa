@@ -1,6 +1,24 @@
 {
-  "_meta": { "updatedAt": "2026-03-13", "source": "manual" },
-  "CDI": { "key": "CDI", "label": "CDI", "annualRate": 13.65, "reference": "Mar/2026" },
-  "SELIC": { "key": "SELIC", "label": "Selic", "annualRate": 13.75, "reference": "Mar/2026" },
-  "IPCA": { "key": "IPCA", "label": "IPCA", "annualRate": 5.06, "reference": "Mar/2026" }
+  "_meta": {
+    "updatedAt": "2026-03-13",
+    "source": "BCB/SGS API"
+  },
+  "CDI": {
+    "key": "CDI",
+    "label": "CDI",
+    "annualRate": 14.9,
+    "reference": "Mar/2026"
+  },
+  "SELIC": {
+    "key": "SELIC",
+    "label": "Selic",
+    "annualRate": 15,
+    "reference": "Mar/2026"
+  },
+  "IPCA": {
+    "key": "IPCA",
+    "label": "IPCA",
+    "annualRate": 3.81,
+    "reference": "Feb/2026"
+  }
 }
