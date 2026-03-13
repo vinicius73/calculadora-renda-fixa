@@ -53,9 +53,10 @@ describe('CalculatorForm', () => {
       },
     })
 
+    // Order: initialValue[0], monthlyValue[1], period[2], taxDisplay[3]
     // taxPeriod starts as Annual, so entering 15 stores toMonthlyRate(15)
     const inputs = wrapper.findAll('input')
-    const taxInput = inputs[2]
+    const taxInput = inputs[3]
     await taxInput.setValue(15)
     expect(store.entry.monthlyTax).toBeCloseTo(toMonthlyRate(15), 10)
   })
@@ -71,8 +72,9 @@ describe('CalculatorForm', () => {
       },
     })
 
+    // Order: initialValue[0], monthlyValue[1], period[2], taxDisplay[3]
     const inputs = wrapper.findAll('input')
-    const periodInput = inputs[3]
+    const periodInput = inputs[2]
     await periodInput.setValue(24)
     expect(store.entry.period).toBe(24)
   })

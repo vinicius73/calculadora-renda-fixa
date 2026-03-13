@@ -12,10 +12,45 @@ import {
   type IndexKey,
 } from '@/lib/indices'
 import { useIndices } from '@/composables/useIndices'
+import { useBrInput, BrInputMode } from '@/composables/useBrInput'
 import InfoIcon from '@/components/InfoIcon.vue'
 
 const store = useCalculatorStore()
 const { entry, goalMode, goalTarget } = storeToRefs(store)
+
+// ── BR-formatted inputs ──────────────────────────────────────────
+
+const initialValueInput = useBrInput(
+  () => entry.value.initialValue,
+  (v) => {
+    entry.value.initialValue = v
+  },
+  BrInputMode.Currency,
+)
+
+const monthlyValueInput = useBrInput(
+  () => entry.value.monthlyValue,
+  (v) => {
+    entry.value.monthlyValue = v
+  },
+  BrInputMode.Currency,
+)
+
+const goalTargetInput = useBrInput(
+  () => goalTarget.value,
+  (v) => {
+    goalTarget.value = v
+  },
+  BrInputMode.Currency,
+)
+
+const periodInput = useBrInput(
+  () => entry.value.period,
+  (v) => {
+    entry.value.period = Math.max(1, Math.round(v))
+  },
+  BrInputMode.Integer,
+)
 
 // ── Interest rate with period toggle ────────────────────────────
 
@@ -35,6 +70,14 @@ const taxDisplay = computed({
     store.setEntry({ monthlyTax: monthly })
   },
 })
+
+const taxInput = useBrInput(
+  () => taxDisplay.value,
+  (v) => {
+    taxDisplay.value = v
+  },
+  BrInputMode.Decimal,
+)
 
 // Flips display mode; computed getter re-derives the equivalent rate automatically
 function switchPeriod(period: TaxPeriod) {
@@ -63,6 +106,22 @@ useCalculatorUrlSync({ taxPeriod, rateSource, selectedIndex, indexMultiplier })
 const editingIndexRate = ref(false)
 const editableIndexRate = ref<number>(0)
 const indexRateInputRef = ref<HTMLInputElement | null>(null)
+
+const indexMultiplierInput = useBrInput(
+  () => indexMultiplier.value,
+  (v) => {
+    indexMultiplier.value = v
+  },
+  BrInputMode.Decimal,
+)
+
+const editableIndexRateInput = useBrInput(
+  () => editableIndexRate.value,
+  (v) => {
+    editableIndexRate.value = v
+  },
+  BrInputMode.Decimal,
+)
 
 const { indices, updateRate } = useIndices()
 
@@ -113,6 +172,11 @@ function cancelEditIndexRate() {
   editingIndexRate.value = false
 }
 
+function saveIndexRateBlur() {
+  editableIndexRateInput.onBlur()
+  saveIndexRate()
+}
+
 // Detects if user manually overrode the current index base rate
 const isCurrentIndexCustom = computed(() => {
   const defaultRate = DEFAULT_INDICES[selectedIndex.value].annualRate
@@ -160,7 +224,14 @@ function resetCurrentIndex() {
         </div>
         <label class="field-input-row">
           <span class="field-affix mono-text-ui-dense">R$</span>
-          <input v-model.number="entry.initialValue" inputmode="numeric" type="number" min="0" />
+          <input
+            :value="initialValueInput.display.value"
+            type="text"
+            inputmode="decimal"
+            @focus="initialValueInput.onFocus"
+            @input="initialValueInput.onInput"
+            @blur="initialValueInput.onBlur"
+          />
         </label>
       </div>
 
@@ -184,17 +255,21 @@ function resetCurrentIndex() {
           <span class="field-affix mono-text-ui-dense">R$</span>
           <input
             v-if="goalMode"
-            v-model.number="goalTarget"
-            inputmode="numeric"
-            type="number"
-            min="0"
+            :value="goalTargetInput.display.value"
+            type="text"
+            inputmode="decimal"
+            @focus="goalTargetInput.onFocus"
+            @input="goalTargetInput.onInput"
+            @blur="goalTargetInput.onBlur"
           />
           <input
             v-else
-            v-model.number="entry.monthlyValue"
-            inputmode="numeric"
-            type="number"
-            min="0"
+            :value="monthlyValueInput.display.value"
+            type="text"
+            inputmode="decimal"
+            @focus="monthlyValueInput.onFocus"
+            @input="monthlyValueInput.onInput"
+            @blur="monthlyValueInput.onBlur"
           />
         </label>
       </div>
@@ -209,7 +284,14 @@ function resetCurrentIndex() {
           </AppTooltip>
         </div>
         <label class="field-input-row">
-          <input v-model.number="entry.period" inputmode="numeric" type="number" />
+          <input
+            :value="periodInput.display.value"
+            type="text"
+            inputmode="numeric"
+            @focus="periodInput.onFocus"
+            @input="periodInput.onInput"
+            @blur="periodInput.onBlur"
+          />
           <span class="field-affix field-suffix mono-text-ui-dense">meses</span>
         </label>
       </div>
@@ -252,11 +334,12 @@ function resetCurrentIndex() {
         <template v-if="rateSource === RateSource.Fixed">
           <label class="field-input-row">
             <input
-              v-model.number="taxDisplay"
+              :value="taxInput.display.value"
+              type="text"
               inputmode="decimal"
-              type="number"
-              step="any"
-              min="0"
+              @focus="taxInput.onFocus"
+              @input="taxInput.onInput"
+              @blur="taxInput.onBlur"
             />
             <span class="field-affix mono-text-ui-dense">%</span>
             <div class="period-toggle" role="group" aria-label="Período da taxa">
@@ -308,12 +391,13 @@ function resetCurrentIndex() {
             <span class="formula-op mono-text-ui-dense">×</span>
             <label class="formula-input-wrap">
               <input
-                v-model.number="indexMultiplier"
+                :value="indexMultiplierInput.display.value"
+                type="text"
                 inputmode="decimal"
-                type="number"
-                step="any"
-                min="0"
                 class="formula-input mono-text-ui-dense"
+                @focus="indexMultiplierInput.onFocus"
+                @input="indexMultiplierInput.onInput"
+                @blur="indexMultiplierInput.onBlur"
               />
               <span class="formula-pct mono-text-ui-dense">%</span>
             </label>
@@ -369,12 +453,13 @@ function resetCurrentIndex() {
             <template v-else>
               <input
                 ref="indexRateInputRef"
-                v-model.number="editableIndexRate"
-                type="number"
+                :value="editableIndexRateInput.display.value"
+                type="text"
                 inputmode="decimal"
-                step="any"
                 class="index-rate-edit-input mono-text-ui-dense"
-                @blur="saveIndexRate"
+                @focus="editableIndexRateInput.onFocus"
+                @input="editableIndexRateInput.onInput"
+                @blur="saveIndexRateBlur"
                 @keydown.enter="saveIndexRate"
                 @keydown.escape="cancelEditIndexRate"
               />
