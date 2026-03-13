@@ -22,6 +22,7 @@ function onKeydown(e: KeyboardEvent) {
   <Teleport to="body">
     <Transition name="modal">
       <div
+        v-show="true"
         class="modal-backdrop"
         role="dialog"
         aria-modal="true"

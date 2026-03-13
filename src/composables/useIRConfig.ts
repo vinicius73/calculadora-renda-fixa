@@ -1,10 +1,5 @@
 import { useLocalStorage } from '@vueuse/core'
-import {
-  DEFAULT_IR_BRACKETS,
-  calculateIR,
-  getIRRate,
-  type IRBracket,
-} from '@/lib/irBrackets'
+import { DEFAULT_IR_BRACKETS, calculateIR, getIRRate, type IRBracket } from '@/lib/irBrackets'
 
 // Singleton storage — shared across all composable calls.
 const enabled = useLocalStorage<boolean>('renda-fixa-ir-enabled', false)

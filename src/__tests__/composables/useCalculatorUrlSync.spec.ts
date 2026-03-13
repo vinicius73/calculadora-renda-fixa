@@ -265,10 +265,8 @@ describe('useCalculatorUrlSync', () => {
     const match = callUrl.match(/\?p=(.+)$/)
     const param = match?.[1]
     expect(param).toBeTruthy()
-    if (param) {
-      const decoded = parseCalculatorUrlParams(decodeURIComponent(param))
-      expect(decoded?.period).toBe(18)
-    }
+    const decoded = parseCalculatorUrlParams(decodeURIComponent(param!))
+    expect(decoded?.period).toBe(18)
 
     vi.useRealTimers()
   })

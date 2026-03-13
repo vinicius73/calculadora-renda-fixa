@@ -19,7 +19,7 @@ describe('ReloadPrompt', () => {
     offlineReady = ref(false)
     needRefresh = ref(false)
     updateServiceWorkerMock = vi.fn().mockResolvedValue(undefined)
-    useRegisterSW.mockImplementation((options?: { onRegisterError?: (err: unknown) => void }) => {
+    useRegisterSW.mockImplementation((_options?: { onRegisterError?: (err: unknown) => void }) => {
       return {
         offlineReady,
         needRefresh,
@@ -133,7 +133,6 @@ describe('ReloadPrompt', () => {
   })
 
   it('calls onRegisterError when useRegisterSW receives it', () => {
-    const onRegisterError = vi.fn()
     useRegisterSW.mockImplementation(() => ({
       offlineReady: ref(false),
       needRefresh: ref(false),

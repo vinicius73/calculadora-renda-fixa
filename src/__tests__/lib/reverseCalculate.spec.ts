@@ -30,7 +30,12 @@ describe('reverseCalculate', () => {
     const pmt = reverseCalculate(goal, initial, monthlyRate, months)
     expect(pmt).toBeGreaterThan(0)
 
-    const results = calcule({ initialValue: initial, monthlyValue: pmt, monthlyTax: monthlyRate, period: months })
+    const results = calcule({
+      initialValue: initial,
+      monthlyValue: pmt,
+      monthlyTax: monthlyRate,
+      period: months,
+    })
     const finalValue = results[results.length - 1]!.value
 
     // Should be within R$ 0.01 of the goal
@@ -43,7 +48,12 @@ describe('reverseCalculate', () => {
     const months = 36
 
     const pmt = reverseCalculate(goal, 0, monthlyRate, months)
-    const results = calcule({ initialValue: 0, monthlyValue: pmt, monthlyTax: monthlyRate, period: months })
+    const results = calcule({
+      initialValue: 0,
+      monthlyValue: pmt,
+      monthlyTax: monthlyRate,
+      period: months,
+    })
     const finalValue = results[results.length - 1]!.value
 
     expect(finalValue).toBeCloseTo(goal, 0)

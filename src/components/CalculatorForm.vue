@@ -76,14 +76,11 @@ const indexEffectiveHint = computed(() => {
 })
 
 // Sync effective rate to store whenever index mode inputs change
-watch(
-  [indexEffectiveAnnualRate, rateSource],
-  ([annual, source]) => {
-    if (source === 'index' && !isNaN(annual) && annual > 0) {
-      store.setEntry({ monthlyTax: toMonthlyRate(annual) })
-    }
-  },
-)
+watch([indexEffectiveAnnualRate, rateSource], ([annual, source]) => {
+  if (source === 'index' && !isNaN(annual) && annual > 0) {
+    store.setEntry({ monthlyTax: toMonthlyRate(annual) })
+  }
+})
 
 function setRateSource(source: RateSource) {
   rateSource.value = source

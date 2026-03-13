@@ -7,9 +7,7 @@ import ResultTable from './ResultTable.vue'
 const store = useCalculatorStore()
 
 const showSection = computed(
-  () =>
-    store.hasResults ||
-    (store.goalMode && store.goalTarget > 0 && store.goalResult > 0),
+  () => store.hasResults || (store.goalMode && store.goalTarget > 0 && store.goalResult > 0),
 )
 </script>
 

@@ -21,7 +21,12 @@ export const useCalculatorStore = defineStore('calculator', () => {
 
   const goalResult = computed(() => {
     if (!goalMode.value || goalTarget.value <= 0) return 0
-    return reverseCalculate(goalTarget.value, entry.value.initialValue, entry.value.monthlyTax, entry.value.period)
+    return reverseCalculate(
+      goalTarget.value,
+      entry.value.initialValue,
+      entry.value.monthlyTax,
+      entry.value.period,
+    )
   })
 
   // ── Derived ──────────────────────────────────────────────────
