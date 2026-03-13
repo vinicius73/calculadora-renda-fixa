@@ -1,24 +1,41 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useCalculatorStore } from '@/stores/calculator'
 import AppTooltip from '@/components/AppTooltip.vue'
-import { TaxPeriod, RateSource, toAnnualRate, toMonthlyRate } from '@/lib/taxRate'
-import { useCalculatorUrlSync } from '@/composables/useCalculatorUrlSync'
-import {
-  INDEX_KEYS,
-  DEFAULT_INDICES,
-  calculateEffectiveAnnualRate,
-  type IndexKey,
-} from '@/lib/indices'
-import { useIndices } from '@/composables/useIndices'
 import { useBrInput, BrInputMode } from '@/composables/useBrInput'
+import { useCalculatorRateField } from '@/composables/useCalculatorRateField'
 import InfoIcon from '@/components/InfoIcon.vue'
 
 const store = useCalculatorStore()
 const { entry, goalMode, goalTarget } = storeToRefs(store)
 
-// ── BR-formatted inputs ──────────────────────────────────────────
+const {
+  TaxPeriod,
+  RateSource,
+  INDEX_KEYS,
+  taxPeriod,
+  rateSource,
+  selectedIndex,
+  taxInput,
+  taxHint,
+  switchPeriod,
+  editingIndexRate,
+  indexRateInputRef,
+  indexMultiplierInput,
+  editableIndexRateInput,
+  indices,
+  currentIndexEntry,
+  indexEffectiveAnnualRateDisplay,
+  indexEffectiveHint,
+  setRateSource,
+  startEditIndexRate,
+  saveIndexRate,
+  cancelEditIndexRate,
+  saveIndexRateBlur,
+  isCurrentIndexCustom,
+  resetCurrentIndex,
+  setSelectedIndex,
+} = useCalculatorRateField()
 
 const initialValueInput = useBrInput(
   () => entry.value.initialValue,
@@ -51,141 +68,6 @@ const periodInput = useBrInput(
   },
   BrInputMode.Integer,
 )
-
-// ── Interest rate with period toggle ────────────────────────────
-
-const taxPeriod = ref<TaxPeriod>(TaxPeriod.Annual)
-
-const taxDisplay = computed({
-  get(): number {
-    const raw =
-      taxPeriod.value === TaxPeriod.Monthly
-        ? store.entry.monthlyTax
-        : toAnnualRate(store.entry.monthlyTax)
-    return parseFloat(raw.toFixed(10))
-  },
-  set(val: number) {
-    if (isNaN(val)) return
-    const monthly = taxPeriod.value === TaxPeriod.Monthly ? val : toMonthlyRate(val)
-    store.setEntry({ monthlyTax: monthly })
-  },
-})
-
-const taxInput = useBrInput(
-  () => taxDisplay.value,
-  (v) => {
-    taxDisplay.value = v
-  },
-  BrInputMode.Decimal,
-)
-
-// Flips display mode; computed getter re-derives the equivalent rate automatically
-function switchPeriod(period: TaxPeriod) {
-  if (period === taxPeriod.value) return
-  taxPeriod.value = period
-}
-
-// Equivalent rate shown as contextual hint below the field
-const taxHint = computed(() => {
-  if (isNaN(taxDisplay.value) || taxDisplay.value <= 0) return null
-  if (taxPeriod.value === TaxPeriod.Monthly) {
-    return `≡ ${toAnnualRate(taxDisplay.value).toFixed(2)}% ao ano`
-  } else {
-    return `≡ ${toMonthlyRate(taxDisplay.value).toFixed(4)}% ao mês`
-  }
-})
-
-// ── Index rate mode ────────────────────────────────────────────
-
-const rateSource = ref<RateSource>(RateSource.Fixed)
-const selectedIndex = ref<IndexKey>('CDI')
-const indexMultiplier = ref<number>(100)
-
-useCalculatorUrlSync({ taxPeriod, rateSource, selectedIndex, indexMultiplier })
-
-const editingIndexRate = ref(false)
-const editableIndexRate = ref<number>(0)
-const indexRateInputRef = ref<HTMLInputElement | null>(null)
-
-const indexMultiplierInput = useBrInput(
-  () => indexMultiplier.value,
-  (v) => {
-    indexMultiplier.value = v
-  },
-  BrInputMode.Decimal,
-)
-
-const editableIndexRateInput = useBrInput(
-  () => editableIndexRate.value,
-  (v) => {
-    editableIndexRate.value = v
-  },
-  BrInputMode.Decimal,
-)
-
-const { indices, updateRate } = useIndices()
-
-const currentIndexEntry = computed(() => indices.value[selectedIndex.value])
-
-const indexEffectiveAnnualRate = computed(() =>
-  calculateEffectiveAnnualRate(currentIndexEntry.value.annualRate, indexMultiplier.value),
-)
-
-const indexEffectiveHint = computed(() => {
-  const annual = indexEffectiveAnnualRate.value
-  if (isNaN(annual) || annual <= 0) return null
-  const monthly = toMonthlyRate(annual)
-  return `≡ ${monthly.toFixed(4)}% a.m. / ${annual.toFixed(2)}% a.a. (efetivo)`
-})
-
-// Sync effective rate to store whenever index mode inputs change
-watch([indexEffectiveAnnualRate, rateSource], ([annual, source]) => {
-  if (source !== RateSource.Index || isNaN(annual) || annual <= 0) return
-  const next = toMonthlyRate(annual)
-  if (Math.abs(next - store.entry.monthlyTax) < 0.0001) return
-  store.setEntry({ monthlyTax: next })
-})
-
-function setRateSource(source: RateSource) {
-  rateSource.value = source
-  // When switching to index mode, immediately apply effective rate to store
-  if (source === RateSource.Index) {
-    const annual = indexEffectiveAnnualRate.value
-    if (!isNaN(annual) && annual > 0) {
-      store.setEntry({ monthlyTax: toMonthlyRate(annual) })
-    }
-  }
-}
-
-function startEditIndexRate() {
-  editableIndexRate.value = currentIndexEntry.value.annualRate
-  editingIndexRate.value = true
-  nextTick(() => indexRateInputRef.value?.focus())
-}
-
-function saveIndexRate() {
-  updateRate(selectedIndex.value, editableIndexRate.value)
-  editingIndexRate.value = false
-}
-
-function cancelEditIndexRate() {
-  editingIndexRate.value = false
-}
-
-function saveIndexRateBlur() {
-  editableIndexRateInput.onBlur()
-  saveIndexRate()
-}
-
-// Detects if user manually overrode the current index base rate
-const isCurrentIndexCustom = computed(() => {
-  const defaultRate = DEFAULT_INDICES[selectedIndex.value].annualRate
-  return Math.abs(currentIndexEntry.value.annualRate - defaultRate) > 0.0001
-})
-
-function resetCurrentIndex() {
-  updateRate(selectedIndex.value, DEFAULT_INDICES[selectedIndex.value].annualRate)
-}
 </script>
 
 <template>
@@ -368,7 +250,6 @@ function resetCurrentIndex() {
 
         <!-- Index rate mode -->
         <template v-else>
-          <!-- Index selector chips -->
           <div class="index-chips" role="group" aria-label="Índice de referência">
             <button
               v-for="key in INDEX_KEYS"
@@ -376,7 +257,7 @@ function resetCurrentIndex() {
               type="button"
               class="index-chip"
               :class="{ 'chip-active': selectedIndex === key }"
-              @click="selectedIndex = key"
+              @click="setSelectedIndex(key)"
             >
               <span class="chip-name mono-text-ui-dense">{{ indices[key].label }}</span>
               <span class="chip-rate mono-text-ui-dense"
@@ -385,7 +266,6 @@ function resetCurrentIndex() {
             </button>
           </div>
 
-          <!-- Multiplier formula: CDI × ___% = X% a.a. -->
           <div class="index-formula-row">
             <span class="formula-label mono-text-ui-dense">{{ currentIndexEntry.label }}</span>
             <span class="formula-op mono-text-ui-dense">×</span>
@@ -403,11 +283,10 @@ function resetCurrentIndex() {
             </label>
             <span class="formula-eq mono-text-ui-dense">=</span>
             <span class="formula-result mono-text-ui-dense">
-              {{ indexEffectiveAnnualRate.toFixed(2) }}% a.a.
+              {{ indexEffectiveAnnualRateDisplay }}% a.a.
             </span>
           </div>
 
-          <!-- Base rate info with inline edit -->
           <div class="index-base-row">
             <span class="index-base-label mono-text-ui-dense">base:</span>
             <template v-if="!editingIndexRate">
