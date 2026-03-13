@@ -81,7 +81,7 @@ export function useCalculatorRateField() {
     BrInputMode.Decimal,
   )
 
-  const { indices, updateRate } = useIndices()
+  const { indices, updateRate, markAsEdited, markAsReset, isEdited } = useIndices()
 
   const currentIndexEntry = computed(() => indices.value[selectedIndex.value])
 
@@ -127,6 +127,7 @@ export function useCalculatorRateField() {
 
   function saveIndexRate() {
     updateRate(selectedIndex.value, editableIndexRate.value)
+    markAsEdited(selectedIndex.value)
     editingIndexRate.value = false
   }
 
@@ -139,13 +140,11 @@ export function useCalculatorRateField() {
     saveIndexRate()
   }
 
-  const isCurrentIndexCustom = computed(() => {
-    const defaultRate = DEFAULT_INDICES[selectedIndex.value].annualRate
-    return Math.abs(currentIndexEntry.value.annualRate - defaultRate) > 0.0001
-  })
+  const isCurrentIndexCustom = computed(() => isEdited(selectedIndex.value))
 
   function resetCurrentIndex() {
     updateRate(selectedIndex.value, DEFAULT_INDICES[selectedIndex.value].annualRate)
+    markAsReset(selectedIndex.value)
   }
 
   function setSelectedIndex(key: IndexKey) {
