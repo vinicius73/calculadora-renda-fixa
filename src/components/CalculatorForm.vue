@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useCalculatorStore } from '@/stores/calculator'
 import AppTooltip from '@/components/AppTooltip.vue'
 import { TaxPeriod, toAnnualRate, toMonthlyRate } from '@/lib/taxRate'
 import { useCalculatorUrlSync } from '@/composables/useCalculatorUrlSync'
+import { INDEX_KEYS, calculateEffectiveAnnualRate, type IndexKey } from '@/lib/indices'
+import { useIndices } from '@/composables/useIndices'
 
 const store = useCalculatorStore()
 const { entry } = storeToRefs(store)
@@ -45,6 +47,71 @@ const taxHint = computed(() => {
     return `≡ ${toMonthlyRate(taxDisplay.value).toFixed(4)}% ao mês`
   }
 })
+
+// ── Index rate mode ────────────────────────────────────────────
+
+type RateSource = 'fixed' | 'index'
+
+const rateSource = ref<RateSource>('fixed')
+const selectedIndex = ref<IndexKey>('CDI')
+const indexMultiplier = ref<number>(100)
+
+const editingIndexRate = ref(false)
+const editableIndexRate = ref<number>(0)
+const indexRateInputRef = ref<HTMLInputElement | null>(null)
+
+const { indices, updateRate } = useIndices()
+
+const currentIndexEntry = computed(() => indices.value[selectedIndex.value])
+
+const indexEffectiveAnnualRate = computed(() =>
+  calculateEffectiveAnnualRate(currentIndexEntry.value.annualRate, indexMultiplier.value),
+)
+
+const indexEffectiveHint = computed(() => {
+  const annual = indexEffectiveAnnualRate.value
+  if (isNaN(annual) || annual <= 0) return null
+  const monthly = toMonthlyRate(annual)
+  return `≡ ${monthly.toFixed(4)}% a.m. / ${annual.toFixed(2)}% a.a. (efetivo)`
+})
+
+// Sync effective rate to store whenever index mode inputs change
+watch(
+  [indexEffectiveAnnualRate, rateSource],
+  ([annual, source]) => {
+    if (source === 'index' && !isNaN(annual) && annual > 0) {
+      store.setEntry({ monthlyTax: toMonthlyRate(annual) })
+    }
+  },
+)
+
+function setRateSource(source: RateSource) {
+  rateSource.value = source
+  // When switching to index mode, immediately apply effective rate to store
+  if (source === 'index') {
+    const annual = indexEffectiveAnnualRate.value
+    if (!isNaN(annual) && annual > 0) {
+      store.setEntry({ monthlyTax: toMonthlyRate(annual) })
+    }
+  }
+}
+
+function startEditIndexRate() {
+  editableIndexRate.value = currentIndexEntry.value.annualRate
+  editingIndexRate.value = true
+  nextTick(() => indexRateInputRef.value?.focus())
+}
+
+function saveIndexRate() {
+  if (!isNaN(editableIndexRate.value) && editableIndexRate.value > 0) {
+    updateRate(selectedIndex.value, editableIndexRate.value)
+  }
+  editingIndexRate.value = false
+}
+
+function cancelEditIndexRate() {
+  editingIndexRate.value = false
+}
 </script>
 
 <template>
@@ -112,8 +179,26 @@ const taxHint = computed(() => {
       <div class="field">
         <div class="field-label-row">
           <span class="field-label">Taxa de Juros</span>
+          <div class="period-toggle rate-source-toggle" role="group" aria-label="Fonte da taxa">
+            <button
+              type="button"
+              class="period-btn mono-text-ui-dense"
+              :class="{ 'period-active': rateSource === 'fixed' }"
+              @click="setRateSource('fixed')"
+            >
+              Fixa
+            </button>
+            <button
+              type="button"
+              class="period-btn mono-text-ui-dense"
+              :class="{ 'period-active': rateSource === 'index' }"
+              @click="setRateSource('index')"
+            >
+              % Índice
+            </button>
+          </div>
           <AppTooltip
-            content="Taxa de retorno do investimento. Use a.m. para mensal ou a.a. para anual — a conversão é feita automaticamente com juros compostos"
+            content="Taxa de retorno do investimento. Use taxa fixa ou calcule com base em um índice (CDI, Selic, IPCA)"
           >
             <span class="info-icon" tabindex="-1" aria-label="Ajuda">
               <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
@@ -132,31 +217,107 @@ const taxHint = computed(() => {
             </span>
           </AppTooltip>
         </div>
-        <label class="field-input-row">
-          <input v-model.number="taxDisplay" inputmode="decimal" type="number" step="any" min="0" />
-          <span class="field-affix mono-text-ui-dense">%</span>
-          <div class="period-toggle" role="group" aria-label="Período da taxa">
-            <button
-              type="button"
-              class="period-btn mono-text-ui-dense"
-              :class="{ 'period-active': taxPeriod === TaxPeriod.Monthly }"
-              @click="switchPeriod(TaxPeriod.Monthly)"
-            >
-              a.m.
-            </button>
-            <button
-              type="button"
-              class="period-btn mono-text-ui-dense"
-              :class="{ 'period-active': taxPeriod === TaxPeriod.Annual }"
-              @click="switchPeriod(TaxPeriod.Annual)"
-            >
-              a.a.
-            </button>
+
+        <!-- Fixed rate (current behavior) -->
+        <template v-if="rateSource === 'fixed'">
+          <label class="field-input-row">
+            <input
+              v-model.number="taxDisplay"
+              inputmode="decimal"
+              type="number"
+              step="any"
+              min="0"
+            />
+            <span class="field-affix mono-text-ui-dense">%</span>
+            <div class="period-toggle" role="group" aria-label="Período da taxa">
+              <button
+                type="button"
+                class="period-btn mono-text-ui-dense"
+                :class="{ 'period-active': taxPeriod === TaxPeriod.Monthly }"
+                @click="switchPeriod(TaxPeriod.Monthly)"
+              >
+                a.m.
+              </button>
+              <button
+                type="button"
+                class="period-btn mono-text-ui-dense"
+                :class="{ 'period-active': taxPeriod === TaxPeriod.Annual }"
+                @click="switchPeriod(TaxPeriod.Annual)"
+              >
+                a.a.
+              </button>
+            </div>
+          </label>
+          <Transition name="hint">
+            <span v-if="taxHint" class="tax-hint mono-text-ui">{{ taxHint }}</span>
+          </Transition>
+        </template>
+
+        <!-- Index rate mode -->
+        <template v-else>
+          <label class="field-input-row">
+            <select v-model="selectedIndex" class="index-select mono-text-ui-dense">
+              <option v-for="key in INDEX_KEYS" :key="key" :value="key">
+                {{ indices[key].label }}
+              </option>
+            </select>
+            <span class="field-affix mono-text-ui-dense index-sep">×</span>
+            <input
+              v-model.number="indexMultiplier"
+              inputmode="decimal"
+              type="number"
+              step="any"
+              min="0"
+              class="index-multiplier-input"
+            />
+            <span class="field-affix mono-text-ui-dense">%</span>
+          </label>
+          <div class="index-base-row">
+            <span class="index-base-label mono-text-ui-dense">
+              {{ currentIndexEntry.label }}:
+            </span>
+            <template v-if="!editingIndexRate">
+              <span class="index-rate-display mono-text-ui-dense">
+                {{ currentIndexEntry.annualRate.toFixed(2) }}% a.a.
+              </span>
+              <button
+                type="button"
+                class="index-edit-btn"
+                title="Editar taxa base"
+                @click="startEditIndexRate"
+              >
+                <svg width="9" height="9" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+                  <path
+                    d="M7 1.5l1.5 1.5L3 8.5H1.5V7L7 1.5z"
+                    stroke="currentColor"
+                    stroke-width="1.2"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+            </template>
+            <template v-else>
+              <input
+                ref="indexRateInputRef"
+                v-model.number="editableIndexRate"
+                type="number"
+                inputmode="decimal"
+                step="any"
+                class="index-rate-edit-input mono-text-ui-dense"
+                @blur="saveIndexRate"
+                @keydown.enter="saveIndexRate"
+                @keydown.escape="cancelEditIndexRate"
+              />
+              <span class="field-affix mono-text-ui-dense">% a.a.</span>
+            </template>
+            <span class="index-ref mono-text-ui-dense">· {{ currentIndexEntry.reference }}</span>
           </div>
-        </label>
-        <Transition name="hint">
-          <span v-if="taxHint" class="tax-hint mono-text-ui">{{ taxHint }}</span>
-        </Transition>
+          <Transition name="hint">
+            <span v-if="indexEffectiveHint" class="tax-hint mono-text-ui">
+              {{ indexEffectiveHint }}
+            </span>
+          </Transition>
+        </template>
       </div>
 
       <div class="field">
@@ -298,6 +459,12 @@ const taxHint = computed(() => {
   background: color-mix(in srgb, var(--c-gold) 10%, transparent);
 }
 
+/* ── Rate source toggle (Fixa / % Índice) ── */
+
+.rate-source-toggle {
+  @apply ml-0 mr-auto;
+}
+
 /* ── Conversion hint ── */
 
 .tax-hint {
@@ -316,6 +483,59 @@ const taxHint = computed(() => {
 .hint-leave-to {
   opacity: 0;
   transform: translateY(-4px);
+}
+
+/* ── Index mode ── */
+
+.index-select {
+  @apply flex-1 min-w-0 border-none bg-transparent py-1 outline-none cursor-pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  @apply text-[0.95rem] tracking-[0.02em] transition-colors duration-200;
+  color: var(--c-text);
+}
+
+.index-sep {
+  @apply text-[0.75rem];
+}
+
+.index-multiplier-input {
+  @apply w-16 flex-none;
+}
+
+.index-base-row {
+  @apply flex items-center gap-[0.3rem] flex-wrap;
+}
+
+.index-base-label {
+  @apply text-[0.62rem];
+  color: var(--c-text-dim);
+}
+
+.index-rate-display {
+  @apply text-[0.7rem];
+  color: var(--c-text-secondary);
+}
+
+.index-edit-btn {
+  @apply cursor-pointer border-none bg-transparent p-0 leading-none transition-colors duration-150;
+  color: var(--c-text-faint);
+}
+
+.index-edit-btn:hover {
+  color: var(--c-gold);
+}
+
+.index-rate-edit-input {
+  @apply w-16 border-none bg-transparent py-0 outline-none;
+  font-family: 'IBM Plex Mono', monospace;
+  @apply text-[0.7rem] tracking-[0.02em];
+  color: var(--c-text);
+  border-bottom: 1px solid var(--c-gold) !important;
+}
+
+.index-ref {
+  @apply text-[0.6rem];
+  color: var(--c-text-faint);
 }
 
 /* ── Calculate button ── */
