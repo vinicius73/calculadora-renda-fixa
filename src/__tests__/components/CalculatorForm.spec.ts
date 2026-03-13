@@ -10,7 +10,7 @@ describe('CalculatorForm', () => {
     setActivePinia(createPinia())
   })
 
-  it('renders 4 inputs and 5 buttons (Fixa, % Índice, a.m., a.a., Calcular)', () => {
+  it('renders 4 inputs and 7 buttons (Simular, Meta, Fixa, % Índice, a.m., a.a., Calcular)', () => {
     const wrapper = mount(CalculatorForm, {
       global: {
         directives: {
@@ -19,8 +19,11 @@ describe('CalculatorForm', () => {
       },
     })
     expect(wrapper.findAll('input')).toHaveLength(4)
-    // rate source toggle: Fixa + % Índice, period toggle: a.m. + a.a., plus the Calcular button
-    expect(wrapper.findAll('button')).toHaveLength(5)
+    // mode toggle: Simular + Meta
+    // rate source toggle: Fixa + % Índice
+    // period toggle: a.m. + a.a.
+    // Calcular button
+    expect(wrapper.findAll('button')).toHaveLength(7)
   })
 
   it('clicking Calcular calls store.calculate()', async () => {

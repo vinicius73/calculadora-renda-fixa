@@ -1,9 +1,16 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useCalculatorStore } from '@/stores/calculator'
 import ResultResume from './ResultResume.vue'
 import ResultTable from './ResultTable.vue'
 
 const store = useCalculatorStore()
+
+const showSection = computed(
+  () =>
+    store.hasResults ||
+    (store.goalMode && store.goalTarget > 0 && store.goalResult > 0),
+)
 </script>
 
 <template>
@@ -12,9 +19,9 @@ const store = useCalculatorStore()
     <span class="loading-dot"></span>
     <span class="loading-dot"></span>
   </div>
-  <div v-else-if="store.hasResults" class="results-wrap">
+  <div v-else-if="showSection" class="results-wrap">
     <ResultResume />
-    <ResultTable :values="store.results" />
+    <ResultTable v-if="store.hasResults" :values="store.results" />
   </div>
 </template>
 

@@ -9,7 +9,7 @@ import { INDEX_KEYS, calculateEffectiveAnnualRate, type IndexKey } from '@/lib/i
 import { useIndices } from '@/composables/useIndices'
 
 const store = useCalculatorStore()
-const { entry } = storeToRefs(store)
+const { entry, goalMode, goalTarget } = storeToRefs(store)
 
 // ── Interest rate with period toggle ────────────────────────────
 
@@ -118,6 +118,24 @@ function cancelEditIndexRate() {
   <div class="form-wrap">
     <div class="form-eyebrow">
       <span class="form-tag eyebrow-label">Parâmetros</span>
+      <div class="mode-toggle" role="group" aria-label="Modo de cálculo">
+        <button
+          type="button"
+          class="mode-btn mono-text-ui-dense"
+          :class="{ 'mode-active': !goalMode }"
+          @click="goalMode = false"
+        >
+          Simular
+        </button>
+        <button
+          type="button"
+          class="mode-btn mono-text-ui-dense"
+          :class="{ 'mode-active': goalMode }"
+          @click="goalMode = true"
+        >
+          Meta
+        </button>
+      </div>
     </div>
 
     <div class="form-fields">
@@ -148,10 +166,17 @@ function cancelEditIndexRate() {
         </label>
       </div>
 
+      <!-- Aporte mensal (modo simular) / Patrimônio alvo (modo meta) -->
       <div class="field">
         <div class="field-label-row">
-          <span class="field-label">Aporte mensal</span>
-          <AppTooltip content="Valor adicionado ao investimento todo mês">
+          <span class="field-label">{{ goalMode ? 'Patrimônio Alvo' : 'Aporte mensal' }}</span>
+          <AppTooltip
+            :content="
+              goalMode
+                ? 'Valor que deseja acumular ao final do período'
+                : 'Valor adicionado ao investimento todo mês'
+            "
+          >
             <span class="info-icon" tabindex="-1" aria-label="Ajuda">
               <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
                 <circle cx="5.5" cy="5.5" r="5" stroke="currentColor" stroke-width="0.9" />
@@ -171,7 +196,20 @@ function cancelEditIndexRate() {
         </div>
         <label class="field-input-row">
           <span class="field-affix mono-text-ui-dense">R$</span>
-          <input v-model.number="entry.monthlyValue" inputmode="numeric" type="number" min="0" />
+          <input
+            v-if="goalMode"
+            v-model.number="goalTarget"
+            inputmode="numeric"
+            type="number"
+            min="0"
+          />
+          <input
+            v-else
+            v-model.number="entry.monthlyValue"
+            inputmode="numeric"
+            type="number"
+            min="0"
+          />
         </label>
       </div>
 
@@ -371,7 +409,35 @@ function cancelEditIndexRate() {
 }
 
 .form-eyebrow {
-  @apply mb-9;
+  @apply mb-9 flex items-center gap-3;
+}
+
+/* ── Mode toggle (Simular / Meta) ── */
+
+.mode-toggle {
+  @apply ml-auto flex shrink-0;
+}
+
+.mode-btn {
+  @apply w-auto cursor-pointer border px-[0.5rem] py-[0.22rem] text-[0.58rem] leading-none tracking-[0.1em] transition-colors duration-150 uppercase;
+  background: transparent;
+  border-color: var(--c-border);
+  color: var(--c-text-faint);
+}
+
+.mode-btn:first-child {
+  border-right: none;
+}
+
+.mode-btn:hover:not(.mode-active) {
+  border-color: var(--c-text-muted);
+  color: var(--c-text-muted);
+}
+
+.mode-btn.mode-active {
+  border-color: var(--c-gold);
+  color: var(--c-gold);
+  background: color-mix(in srgb, var(--c-gold) 10%, transparent);
 }
 
 .form-tag {
