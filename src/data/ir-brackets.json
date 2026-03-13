@@ -1,0 +1,9 @@
+{
+  "_meta": { "updatedAt": "2026-03-13", "source": "manual" },
+  "brackets": [
+    { "upToMonths": 6,    "rate": 22.5, "label": "Até 6 meses" },
+    { "upToMonths": 12,   "rate": 20.0, "label": "6 a 12 meses" },
+    { "upToMonths": 24,   "rate": 17.5, "label": "12 a 24 meses" },
+    { "upToMonths": null, "rate": 15.0, "label": "Acima de 24 meses" }
+  ]
+}

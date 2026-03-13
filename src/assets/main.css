@@ -9,6 +9,7 @@
 
 :root {
   --c-bg: #07090f;
+  --c-bg-panel: #0d1220;
   --c-tooltip-bg: #0d1522;
   --c-tooltip-border: #1e2d44;
   --c-tooltip-text: #b0a898;
@@ -40,6 +41,7 @@
 
 html.light {
   --c-bg: #faf7f2;
+  --c-bg-panel: #f0ece4;
   --c-tooltip-bg: #2a2218;
   --c-tooltip-border: #4a3e30;
   --c-tooltip-text: #e8e0d4;
