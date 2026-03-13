@@ -1,8 +1,9 @@
 import { watch, onMounted, type Ref } from 'vue'
 import { useDebounceFn } from '@vueuse/core'
 import { useCalculatorStore } from '@/stores/calculator'
-import { TaxPeriod } from '@/lib/taxRate'
+import { TaxPeriod, RateSource } from '@/lib/taxRate'
 import type { Entry } from '@/lib/calcule'
+import { INDEX_KEYS, type IndexKey } from '@/lib/indices'
 
 const QUERY_PARAM = 'p'
 const PERIOD_MAX = 600
@@ -14,10 +15,30 @@ export interface CalculatorUrlParams {
   monthlyTax: number
   period: number
   taxPeriod: TaxPeriod
+  goalMode: boolean
+  goalTarget: number
+  rateSource: RateSource
+  selectedIndex: IndexKey
+  indexMultiplier: number
+}
+
+export interface UrlSyncRefs {
+  taxPeriod: Ref<TaxPeriod>
+  rateSource: Ref<RateSource>
+  selectedIndex: Ref<IndexKey>
+  indexMultiplier: Ref<number>
 }
 
 function isTaxPeriod(value: unknown): value is TaxPeriod {
   return value === TaxPeriod.Monthly || value === TaxPeriod.Annual
+}
+
+function isRateSource(value: unknown): value is RateSource {
+  return value === RateSource.Fixed || value === RateSource.Index
+}
+
+function isIndexKey(value: unknown): value is IndexKey {
+  return INDEX_KEYS.includes(value as IndexKey)
 }
 
 function isFiniteNumber(value: unknown): value is number {
@@ -26,6 +47,8 @@ function isFiniteNumber(value: unknown): value is number {
 
 /**
  * Validates and normalizes URL payload. Returns null on any failure so caller can ignore safely.
+ * Fields added later (goalMode, goalTarget, rateSource, selectedIndex, indexMultiplier) are
+ * optional with sensible defaults to keep old URLs working.
  */
 export function parseCalculatorUrlParams(raw: string): CalculatorUrlParams | null {
   try {
@@ -54,25 +77,53 @@ export function parseCalculatorUrlParams(raw: string): CalculatorUrlParams | nul
     const periodInt = Math.floor(period)
     if (periodInt < 1 || periodInt > PERIOD_MAX) return null
 
+    // Optional fields — use defaults when absent so old URLs remain valid
+    const goalMode = typeof o.goalMode === 'boolean' ? o.goalMode : false
+    const goalTarget = isFiniteNumber(o.goalTarget) && o.goalTarget >= 0 ? o.goalTarget : 0
+    const rateSource = isRateSource(o.rateSource) ? o.rateSource : RateSource.Fixed
+    const selectedIndex = isIndexKey(o.selectedIndex) ? o.selectedIndex : 'CDI'
+    const indexMultiplier =
+      isFiniteNumber(o.indexMultiplier) && o.indexMultiplier >= 0 ? o.indexMultiplier : 100
+
     return {
       initialValue,
       monthlyValue,
       monthlyTax,
       period: periodInt,
       taxPeriod,
+      goalMode,
+      goalTarget,
+      rateSource,
+      selectedIndex,
+      indexMultiplier,
     }
   } catch {
     return null
   }
 }
 
-export function encodeCalculatorUrlParams(entry: Entry, taxPeriod: TaxPeriod): string {
+export function encodeCalculatorUrlParams(
+  entry: Entry,
+  state: {
+    taxPeriod: TaxPeriod
+    goalMode?: boolean
+    goalTarget?: number
+    rateSource?: RateSource
+    selectedIndex?: IndexKey
+    indexMultiplier?: number
+  },
+): string {
   const payload: CalculatorUrlParams = {
     initialValue: entry.initialValue,
     monthlyValue: entry.monthlyValue,
     monthlyTax: entry.monthlyTax,
     period: entry.period,
-    taxPeriod,
+    taxPeriod: state.taxPeriod,
+    goalMode: state.goalMode ?? false,
+    goalTarget: state.goalTarget ?? 0,
+    rateSource: state.rateSource ?? RateSource.Fixed,
+    selectedIndex: state.selectedIndex ?? 'CDI',
+    indexMultiplier: state.indexMultiplier ?? 100,
   }
   return btoa(JSON.stringify(payload))
 }
@@ -82,7 +133,7 @@ export function encodeCalculatorUrlParams(entry: Entry, taxPeriod: TaxPeriod): s
  * On load: reads and applies params if valid; on failure, ignores.
  * On change: updates URL with replaceState (debounced).
  */
-export function useCalculatorUrlSync(taxPeriod: Ref<TaxPeriod>): void {
+export function useCalculatorUrlSync(refs: UrlSyncRefs): void {
   const store = useCalculatorStore()
 
   onMounted(() => {
@@ -99,17 +150,41 @@ export function useCalculatorUrlSync(taxPeriod: Ref<TaxPeriod>): void {
       monthlyTax: parsed.monthlyTax,
       period: parsed.period,
     })
-    taxPeriod.value = parsed.taxPeriod
+    refs.taxPeriod.value = parsed.taxPeriod
+    store.goalMode = parsed.goalMode
+    store.goalTarget = parsed.goalTarget
+    refs.rateSource.value = parsed.rateSource
+    refs.selectedIndex.value = parsed.selectedIndex
+    refs.indexMultiplier.value = parsed.indexMultiplier
     store.calculate()
   })
 
   const pushToUrl = useDebounceFn(() => {
     const entry = store.entry
-    const encoded = encodeCalculatorUrlParams(entry, taxPeriod.value)
+    const encoded = encodeCalculatorUrlParams(entry, {
+      taxPeriod: refs.taxPeriod.value,
+      goalMode: store.goalMode,
+      goalTarget: store.goalTarget,
+      rateSource: refs.rateSource.value,
+      selectedIndex: refs.selectedIndex.value,
+      indexMultiplier: refs.indexMultiplier.value,
+    })
     const search = `?${QUERY_PARAM}=${encodeURIComponent(encoded)}`
     const url = `${window.location.pathname}${search}`
     window.history.replaceState(null, '', url)
   }, DEBOUNCE_MS)
 
-  watch([() => store.entry, taxPeriod], () => pushToUrl(), { deep: true })
+  watch(
+    [
+      () => store.entry,
+      refs.taxPeriod,
+      () => store.goalMode,
+      () => store.goalTarget,
+      refs.rateSource,
+      refs.selectedIndex,
+      refs.indexMultiplier,
+    ],
+    () => pushToUrl(),
+    { deep: true },
+  )
 }

@@ -16,8 +16,6 @@ const { entry, goalMode, goalTarget } = storeToRefs(store)
 
 const taxPeriod = ref<TaxPeriod>(TaxPeriod.Annual)
 
-useCalculatorUrlSync(taxPeriod)
-
 const taxDisplay = computed({
   get(): number {
     const raw =
@@ -54,6 +52,8 @@ const taxHint = computed(() => {
 const rateSource = ref<RateSource>(RateSource.Fixed)
 const selectedIndex = ref<IndexKey>('CDI')
 const indexMultiplier = ref<number>(100)
+
+useCalculatorUrlSync({ taxPeriod, rateSource, selectedIndex, indexMultiplier })
 
 const editingIndexRate = ref(false)
 const editableIndexRate = ref<number>(0)
