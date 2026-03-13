@@ -199,6 +199,21 @@ function resetCurrentIndex() {
         </label>
       </div>
 
+      <div class="field">
+        <div class="field-label-row">
+          <span class="field-label">Período</span>
+          <AppTooltip content="Duração total do investimento em meses">
+            <span class="info-icon" tabindex="-1" aria-label="Ajuda">
+              <InfoIcon />
+            </span>
+          </AppTooltip>
+        </div>
+        <label class="field-input-row">
+          <input v-model.number="entry.period" inputmode="numeric" type="number" />
+          <span class="field-affix field-suffix mono-text-ui-dense">meses</span>
+        </label>
+      </div>
+
       <!-- ── Interest rate ── -->
       <div class="field rate-field">
         <!-- Header row: label + source tabs -->
@@ -374,21 +389,6 @@ function resetCurrentIndex() {
             </span>
           </Transition>
         </template>
-      </div>
-
-      <div class="field">
-        <div class="field-label-row">
-          <span class="field-label">Período</span>
-          <AppTooltip content="Duração total do investimento em meses">
-            <span class="info-icon" tabindex="-1" aria-label="Ajuda">
-              <InfoIcon />
-            </span>
-          </AppTooltip>
-        </div>
-        <label class="field-input-row">
-          <input v-model.number="entry.period" inputmode="numeric" type="number" />
-          <span class="field-affix field-suffix mono-text-ui-dense">meses</span>
-        </label>
       </div>
     </div>
 
