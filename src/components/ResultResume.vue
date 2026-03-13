@@ -5,6 +5,7 @@ import { useMoney } from '@/composables/useMoney'
 import { useIRConfig } from '@/composables/useIRConfig'
 import AppTooltip from '@/components/AppTooltip.vue'
 import IRConfigModal from '@/components/IRConfigModal.vue'
+import InfoIcon from '@/components/InfoIcon.vue'
 
 const store = useCalculatorStore()
 const { formatMoney } = useMoney()
@@ -14,22 +15,12 @@ const irModalOpen = ref(false)
 
 // ── Simulation mode ─────────────────────────────────────────────
 
-const simIR = computed(() => {
+const simResults = computed(() => {
   const r = store.lastResult
   if (!r) return null
-  return applyIR(r.value, r.accumulative, store.entry.period)
-})
-
-const simDisplayValue = computed(() => {
-  const r = store.lastResult
-  if (!r) return 0
-  return simIR.value?.netValue ?? r.value
-})
-
-const simGrowthPct = computed(() => {
-  const r = store.lastResult
-  if (!r || r.accumulative === 0) return null
-  return ((simDisplayValue.value / r.accumulative - 1) * 100).toFixed(2)
+  const { irAmount, netValue, irRate } = applyIR(r.value, r.accumulative, store.entry.period)
+  const growthPct = r.accumulative > 0 ? ((netValue / r.accumulative - 1) * 100).toFixed(2) : null
+  return { irAmount, netValue, irRate, growthPct }
 })
 
 // ── Goal mode ────────────────────────────────────────────────────
@@ -68,26 +59,7 @@ const showResults = computed(
         >
           <div class="result-eyebrow eyebrow-label">
             Aporte Necessário
-            <svg
-              class="eyebrow-icon"
-              width="10"
-              height="10"
-              viewBox="0 0 11 11"
-              fill="none"
-              aria-hidden="true"
-            >
-              <circle cx="5.5" cy="5.5" r="5" stroke="currentColor" stroke-width="0.9" />
-              <line
-                x1="5.5"
-                y1="4.8"
-                x2="5.5"
-                y2="7.8"
-                stroke="currentColor"
-                stroke-width="1.1"
-                stroke-linecap="round"
-              />
-              <circle cx="5.5" cy="3.2" r="0.55" fill="currentColor" />
-            </svg>
+            <InfoIcon class="eyebrow-icon" :size="10" />
           </div>
         </AppTooltip>
 
@@ -137,26 +109,7 @@ const showResults = computed(
           <AppTooltip content="Soma de todos os aportes: aporte inicial + (aporte mensal × meses)">
             <span class="result-item-label">
               Total a Investir
-              <svg
-                class="label-icon"
-                width="9"
-                height="9"
-                viewBox="0 0 11 11"
-                fill="none"
-                aria-hidden="true"
-              >
-                <circle cx="5.5" cy="5.5" r="5" stroke="currentColor" stroke-width="0.9" />
-                <line
-                  x1="5.5"
-                  y1="4.8"
-                  x2="5.5"
-                  y2="7.8"
-                  stroke="currentColor"
-                  stroke-width="1.1"
-                  stroke-linecap="round"
-                />
-                <circle cx="5.5" cy="3.2" r="0.55" fill="currentColor" />
-              </svg>
+              <InfoIcon class="label-icon" :size="9" />
             </span>
           </AppTooltip>
         </div>
@@ -168,26 +121,7 @@ const showResults = computed(
           <AppTooltip content="Rendimento bruto esperado = Patrimônio alvo − Total a investir">
             <span class="result-item-label">
               Rendimento Esperado
-              <svg
-                class="label-icon"
-                width="9"
-                height="9"
-                viewBox="0 0 11 11"
-                fill="none"
-                aria-hidden="true"
-              >
-                <circle cx="5.5" cy="5.5" r="5" stroke="currentColor" stroke-width="0.9" />
-                <line
-                  x1="5.5"
-                  y1="4.8"
-                  x2="5.5"
-                  y2="7.8"
-                  stroke="currentColor"
-                  stroke-width="1.1"
-                  stroke-linecap="round"
-                />
-                <circle cx="5.5" cy="3.2" r="0.55" fill="currentColor" />
-              </svg>
+              <InfoIcon class="label-icon" :size="9" />
             </span>
           </AppTooltip>
         </div>
@@ -204,26 +138,7 @@ const showResults = computed(
               <AppTooltip :content="`IR de ${goalBreakdown.irRate}% sobre o rendimento bruto`">
                 <span class="result-item-label">
                   IR Descontado
-                  <svg
-                    class="label-icon"
-                    width="9"
-                    height="9"
-                    viewBox="0 0 11 11"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <circle cx="5.5" cy="5.5" r="5" stroke="currentColor" stroke-width="0.9" />
-                    <line
-                      x1="5.5"
-                      y1="4.8"
-                      x2="5.5"
-                      y2="7.8"
-                      stroke="currentColor"
-                      stroke-width="1.1"
-                      stroke-linecap="round"
-                    />
-                    <circle cx="5.5" cy="3.2" r="0.55" fill="currentColor" />
-                  </svg>
+                  <InfoIcon class="label-icon" :size="9" />
                 </span>
               </AppTooltip>
             </div>
@@ -234,26 +149,7 @@ const showResults = computed(
               <AppTooltip content="Patrimônio líquido após desconto do IR">
                 <span class="result-item-label">
                   Patrimônio Líquido
-                  <svg
-                    class="label-icon"
-                    width="9"
-                    height="9"
-                    viewBox="0 0 11 11"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <circle cx="5.5" cy="5.5" r="5" stroke="currentColor" stroke-width="0.9" />
-                    <line
-                      x1="5.5"
-                      y1="4.8"
-                      x2="5.5"
-                      y2="7.8"
-                      stroke="currentColor"
-                      stroke-width="1.1"
-                      stroke-linecap="round"
-                    />
-                    <circle cx="5.5" cy="3.2" r="0.55" fill="currentColor" />
-                  </svg>
+                  <InfoIcon class="label-icon" :size="9" />
                 </span>
               </AppTooltip>
             </div>
@@ -274,26 +170,7 @@ const showResults = computed(
         >
           <div class="result-eyebrow eyebrow-label">
             {{ irEnabled ? 'Patrimônio Líquido' : 'Patrimônio Final' }}
-            <svg
-              class="eyebrow-icon"
-              width="10"
-              height="10"
-              viewBox="0 0 11 11"
-              fill="none"
-              aria-hidden="true"
-            >
-              <circle cx="5.5" cy="5.5" r="5" stroke="currentColor" stroke-width="0.9" />
-              <line
-                x1="5.5"
-                y1="4.8"
-                x2="5.5"
-                y2="7.8"
-                stroke="currentColor"
-                stroke-width="1.1"
-                stroke-linecap="round"
-              />
-              <circle cx="5.5" cy="3.2" r="0.55" fill="currentColor" />
-            </svg>
+            <InfoIcon class="eyebrow-icon" :size="10" />
           </div>
         </AppTooltip>
 
@@ -302,7 +179,7 @@ const showResults = computed(
           class="ir-config-btn mono-text-ui-dense"
           :class="{ 'ir-active': irEnabled }"
           :title="
-            irEnabled ? `IR ${simIR?.irRate}% ativo — clique para configurar` : 'Configurar IR'
+            irEnabled ? `IR ${simResults?.irRate}% ativo — clique para configurar` : 'Configurar IR'
           "
           @click="irModalOpen = true"
         >
@@ -315,32 +192,35 @@ const showResults = computed(
               stroke-linecap="round"
             />
           </svg>
-          <span v-if="irEnabled && simIR">IR {{ simIR.irRate }}%</span>
+          <span v-if="irEnabled && simResults">IR {{ simResults.irRate }}%</span>
           <span v-else>IR</span>
         </button>
       </div>
 
       <div class="result-total-row">
         <div class="result-total">
-          {{ formatMoney(simDisplayValue) }}
+          {{ formatMoney(simResults?.netValue ?? 0) }}
         </div>
         <AppTooltip
-          v-if="simGrowthPct"
+          v-if="simResults?.growthPct"
           content="Crescimento total = (Patrimônio ÷ Total Investido − 1) × 100"
         >
-          <span class="result-growth mono-text-ui-dense">+{{ simGrowthPct }}%</span>
+          <span class="result-growth mono-text-ui-dense">+{{ simResults.growthPct }}%</span>
         </AppTooltip>
       </div>
 
       <Transition name="hint">
-        <div v-if="irEnabled && simIR" class="result-gross-hint mono-text-ui-dense">
+        <div v-if="irEnabled && simResults" class="result-gross-hint mono-text-ui-dense">
           bruto: {{ formatMoney(store.lastResult.value) }}
         </div>
       </Transition>
 
       <div class="result-rule" />
 
-      <div class="result-breakdown" :class="{ 'has-ir': irEnabled && simIR && simIR.irAmount > 0 }">
+      <div
+        class="result-breakdown"
+        :class="{ 'has-ir': irEnabled && simResults && simResults.irAmount > 0 }"
+      >
         <div class="result-item">
           <span class="result-item-value mono-text-ui result-item-gain">
             {{ formatMoney(store.lastResult.tax) }}
@@ -348,26 +228,7 @@ const showResults = computed(
           <AppTooltip content="Juros acumulados ao longo do período = Patrimônio − Total Investido">
             <span class="result-item-label">
               Rendimento Bruto
-              <svg
-                class="label-icon"
-                width="9"
-                height="9"
-                viewBox="0 0 11 11"
-                fill="none"
-                aria-hidden="true"
-              >
-                <circle cx="5.5" cy="5.5" r="5" stroke="currentColor" stroke-width="0.9" />
-                <line
-                  x1="5.5"
-                  y1="4.8"
-                  x2="5.5"
-                  y2="7.8"
-                  stroke="currentColor"
-                  stroke-width="1.1"
-                  stroke-linecap="round"
-                />
-                <circle cx="5.5" cy="3.2" r="0.55" fill="currentColor" />
-              </svg>
+              <InfoIcon class="label-icon" :size="9" />
             </span>
           </AppTooltip>
         </div>
@@ -378,57 +239,22 @@ const showResults = computed(
           <AppTooltip content="Soma de todos os aportes realizados (inicial + mensais × meses)">
             <span class="result-item-label">
               Total Investido
-              <svg
-                class="label-icon"
-                width="9"
-                height="9"
-                viewBox="0 0 11 11"
-                fill="none"
-                aria-hidden="true"
-              >
-                <circle cx="5.5" cy="5.5" r="5" stroke="currentColor" stroke-width="0.9" />
-                <line
-                  x1="5.5"
-                  y1="4.8"
-                  x2="5.5"
-                  y2="7.8"
-                  stroke="currentColor"
-                  stroke-width="1.1"
-                  stroke-linecap="round"
-                />
-                <circle cx="5.5" cy="3.2" r="0.55" fill="currentColor" />
-              </svg>
+              <InfoIcon class="label-icon" :size="9" />
             </span>
           </AppTooltip>
         </div>
         <Transition name="hint">
-          <div v-if="irEnabled && simIR && simIR.irAmount > 0" class="result-item result-item-ir">
+          <div
+            v-if="irEnabled && simResults && simResults.irAmount > 0"
+            class="result-item result-item-ir"
+          >
             <span class="result-item-value mono-text-ui result-item-deduction">
-              −{{ formatMoney(simIR.irAmount) }}
+              −{{ formatMoney(simResults.irAmount) }}
             </span>
-            <AppTooltip :content="`IR de ${simIR.irRate}% aplicado sobre o rendimento bruto`">
+            <AppTooltip :content="`IR de ${simResults.irRate}% aplicado sobre o rendimento bruto`">
               <span class="result-item-label">
                 IR Descontado
-                <svg
-                  class="label-icon"
-                  width="9"
-                  height="9"
-                  viewBox="0 0 11 11"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <circle cx="5.5" cy="5.5" r="5" stroke="currentColor" stroke-width="0.9" />
-                  <line
-                    x1="5.5"
-                    y1="4.8"
-                    x2="5.5"
-                    y2="7.8"
-                    stroke="currentColor"
-                    stroke-width="1.1"
-                    stroke-linecap="round"
-                  />
-                  <circle cx="5.5" cy="3.2" r="0.55" fill="currentColor" />
-                </svg>
+                <InfoIcon class="label-icon" :size="9" />
               </span>
             </AppTooltip>
           </div>

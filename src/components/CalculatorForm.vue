@@ -3,10 +3,11 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useCalculatorStore } from '@/stores/calculator'
 import AppTooltip from '@/components/AppTooltip.vue'
-import { TaxPeriod, toAnnualRate, toMonthlyRate } from '@/lib/taxRate'
+import { TaxPeriod, RateSource, toAnnualRate, toMonthlyRate } from '@/lib/taxRate'
 import { useCalculatorUrlSync } from '@/composables/useCalculatorUrlSync'
 import { INDEX_KEYS, calculateEffectiveAnnualRate, type IndexKey } from '@/lib/indices'
 import { useIndices } from '@/composables/useIndices'
+import InfoIcon from '@/components/InfoIcon.vue'
 
 const store = useCalculatorStore()
 const { entry, goalMode, goalTarget } = storeToRefs(store)
@@ -50,9 +51,7 @@ const taxHint = computed(() => {
 
 // ── Index rate mode ────────────────────────────────────────────
 
-type RateSource = 'fixed' | 'index'
-
-const rateSource = ref<RateSource>('fixed')
+const rateSource = ref<RateSource>(RateSource.Fixed)
 const selectedIndex = ref<IndexKey>('CDI')
 const indexMultiplier = ref<number>(100)
 
@@ -77,15 +76,16 @@ const indexEffectiveHint = computed(() => {
 
 // Sync effective rate to store whenever index mode inputs change
 watch([indexEffectiveAnnualRate, rateSource], ([annual, source]) => {
-  if (source === 'index' && !isNaN(annual) && annual > 0) {
-    store.setEntry({ monthlyTax: toMonthlyRate(annual) })
-  }
+  if (source !== RateSource.Index || isNaN(annual) || annual <= 0) return
+  const next = toMonthlyRate(annual)
+  if (Math.abs(next - store.entry.monthlyTax) < 0.0001) return
+  store.setEntry({ monthlyTax: next })
 })
 
 function setRateSource(source: RateSource) {
   rateSource.value = source
   // When switching to index mode, immediately apply effective rate to store
-  if (source === 'index') {
+  if (source === RateSource.Index) {
     const annual = indexEffectiveAnnualRate.value
     if (!isNaN(annual) && annual > 0) {
       store.setEntry({ monthlyTax: toMonthlyRate(annual) })
@@ -100,9 +100,7 @@ function startEditIndexRate() {
 }
 
 function saveIndexRate() {
-  if (!isNaN(editableIndexRate.value) && editableIndexRate.value > 0) {
-    updateRate(selectedIndex.value, editableIndexRate.value)
-  }
+  updateRate(selectedIndex.value, editableIndexRate.value)
   editingIndexRate.value = false
 }
 
@@ -141,19 +139,7 @@ function cancelEditIndexRate() {
           <span class="field-label">Aporte inicial</span>
           <AppTooltip content="Valor aplicado no início do investimento">
             <span class="info-icon" tabindex="-1" aria-label="Ajuda">
-              <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
-                <circle cx="5.5" cy="5.5" r="5" stroke="currentColor" stroke-width="0.9" />
-                <line
-                  x1="5.5"
-                  y1="4.8"
-                  x2="5.5"
-                  y2="7.8"
-                  stroke="currentColor"
-                  stroke-width="1.1"
-                  stroke-linecap="round"
-                />
-                <circle cx="5.5" cy="3.2" r="0.55" fill="currentColor" />
-              </svg>
+              <InfoIcon />
             </span>
           </AppTooltip>
         </div>
@@ -175,19 +161,7 @@ function cancelEditIndexRate() {
             "
           >
             <span class="info-icon" tabindex="-1" aria-label="Ajuda">
-              <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
-                <circle cx="5.5" cy="5.5" r="5" stroke="currentColor" stroke-width="0.9" />
-                <line
-                  x1="5.5"
-                  y1="4.8"
-                  x2="5.5"
-                  y2="7.8"
-                  stroke="currentColor"
-                  stroke-width="1.1"
-                  stroke-linecap="round"
-                />
-                <circle cx="5.5" cy="3.2" r="0.55" fill="currentColor" />
-              </svg>
+              <InfoIcon />
             </span>
           </AppTooltip>
         </div>
@@ -218,16 +192,16 @@ function cancelEditIndexRate() {
             <button
               type="button"
               class="period-btn mono-text-ui-dense"
-              :class="{ 'period-active': rateSource === 'fixed' }"
-              @click="setRateSource('fixed')"
+              :class="{ 'period-active': rateSource === RateSource.Fixed }"
+              @click="setRateSource(RateSource.Fixed)"
             >
               Fixa
             </button>
             <button
               type="button"
               class="period-btn mono-text-ui-dense"
-              :class="{ 'period-active': rateSource === 'index' }"
-              @click="setRateSource('index')"
+              :class="{ 'period-active': rateSource === RateSource.Index }"
+              @click="setRateSource(RateSource.Index)"
             >
               % Índice
             </button>
@@ -236,25 +210,13 @@ function cancelEditIndexRate() {
             content="Taxa de retorno do investimento. Use taxa fixa ou calcule com base em um índice (CDI, Selic, IPCA)"
           >
             <span class="info-icon" tabindex="-1" aria-label="Ajuda">
-              <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
-                <circle cx="5.5" cy="5.5" r="5" stroke="currentColor" stroke-width="0.9" />
-                <line
-                  x1="5.5"
-                  y1="4.8"
-                  x2="5.5"
-                  y2="7.8"
-                  stroke="currentColor"
-                  stroke-width="1.1"
-                  stroke-linecap="round"
-                />
-                <circle cx="5.5" cy="3.2" r="0.55" fill="currentColor" />
-              </svg>
+              <InfoIcon />
             </span>
           </AppTooltip>
         </div>
 
         <!-- Fixed rate (current behavior) -->
-        <template v-if="rateSource === 'fixed'">
+        <template v-if="rateSource === RateSource.Fixed">
           <label class="field-input-row">
             <input
               v-model.number="taxDisplay"
@@ -360,19 +322,7 @@ function cancelEditIndexRate() {
           <span class="field-label">Período</span>
           <AppTooltip content="Duração total do investimento em meses">
             <span class="info-icon" tabindex="-1" aria-label="Ajuda">
-              <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
-                <circle cx="5.5" cy="5.5" r="5" stroke="currentColor" stroke-width="0.9" />
-                <line
-                  x1="5.5"
-                  y1="4.8"
-                  x2="5.5"
-                  y2="7.8"
-                  stroke="currentColor"
-                  stroke-width="1.1"
-                  stroke-linecap="round"
-                />
-                <circle cx="5.5" cy="3.2" r="0.55" fill="currentColor" />
-              </svg>
+              <InfoIcon />
             </span>
           </AppTooltip>
         </div>

@@ -3,6 +3,11 @@ export enum TaxPeriod {
   Annual = 'annual',
 }
 
+export enum RateSource {
+  Fixed = 'fixed',
+  Index = 'index',
+}
+
 /**
  * Converts a monthly interest rate (%) to its annual equivalent.
  * Formula: annual = (1 + monthly/100)^12 − 1

@@ -12,6 +12,7 @@ export function useIndices() {
   }
 
   function updateRate(key: IndexKey, annualRate: number) {
+    if (isNaN(annualRate) || annualRate <= 0) return
     indices.value[key] = { ...indices.value[key], annualRate }
   }
 
