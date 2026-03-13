@@ -1,8 +1,11 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { defineStore } from 'pinia'
+import { useDebounceFn } from '@vueuse/core'
 import { calcule, type Entry, type Result } from '@/lib/calcule'
 import { toMonthlyRate } from '@/lib/taxRate'
 import { reverseCalculate } from '@/lib/reverseCalculate'
+
+const AUTO_CALC_DEBOUNCE_MS = 1_000
 
 export const useCalculatorStore = defineStore('calculator', () => {
   const entry = ref<Entry>({
@@ -67,6 +70,10 @@ export const useCalculatorStore = defineStore('calculator', () => {
     results.value = []
     loading.value = false
   }
+
+  const debouncedCalculate = useDebounceFn(calculate, AUTO_CALC_DEBOUNCE_MS)
+
+  watch([entry, goalMode, goalTarget], () => debouncedCalculate(), { deep: true })
 
   calculate()
 
