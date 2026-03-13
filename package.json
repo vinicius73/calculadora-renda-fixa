@@ -14,7 +14,8 @@
     "lint": "run-s lint:*",
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
-    "format": "oxfmt src/"
+    "format": "oxfmt src/",
+    "fix": "run-s lint:eslint lint:oxlint format"
   },
   "dependencies": {
     "@vueuse/core": "^14.2.1",
