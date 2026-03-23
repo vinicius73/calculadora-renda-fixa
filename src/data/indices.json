@@ -1,19 +1,19 @@
 {
   "_meta": {
-    "updatedAt": "2026-03-16",
+    "updatedAt": "2026-03-23",
     "source": "BCB/SGS API"
   },
   "CDI": {
     "key": "CDI",
     "label": "CDI",
-    "annualRate": 14.9,
+    "annualRate": 14.65,
     "reference": "Mar/2026"
   },
   "SELIC": {
     "key": "SELIC",
     "label": "Selic",
-    "annualRate": 15,
-    "reference": "Mar/2026"
+    "annualRate": 14.75,
+    "reference": "Apr/2026"
   },
   "IPCA": {
     "key": "IPCA",
