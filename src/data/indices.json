@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "updatedAt": "2026-05-11",
+    "updatedAt": "2026-05-18",
     "source": "BCB/SGS API"
   },
   "CDI": {
@@ -18,7 +18,7 @@
   "IPCA": {
     "key": "IPCA",
     "label": "IPCA",
-    "annualRate": 4.14,
-    "reference": "Mar/2026"
+    "annualRate": 4.39,
+    "reference": "Apr/2026"
   }
 }
