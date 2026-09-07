@@ -1,13 +1,13 @@
 {
   "_meta": {
-    "updatedAt": "2026-08-31",
+    "updatedAt": "2026-09-07",
     "source": "BCB/SGS API"
   },
   "CDI": {
     "key": "CDI",
     "label": "CDI",
     "annualRate": 13.9,
-    "reference": "Aug/2026"
+    "reference": "Sep/2026"
   },
   "SELIC": {
     "key": "SELIC",
